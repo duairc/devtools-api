@@ -1,0 +1,122 @@
+name:           devtools-api
+version:        1.3.651096
+synopsis:       Haskell bindings to the Chrome DevTools Protocol (bindings)
+description:    https://github.com/ChromeDevTools/devtools-protocol
+license:        MPL-2.0
+author:         Shane O'Brien
+maintainer:     me@shane.sh
+category:       Web
+cabal-version:  >= 1.6
+build-type:     Simple
+homepage:       https://github.com/duairc/devtools-api
+bug-reports:    https://github.com/duairc/devtools-api/issues
+
+extra-source-files:
+  LICENSE
+
+library
+  hs-source-dirs:
+    src
+
+  exposed-modules:
+    DevTools.API.Accessibility
+    DevTools.API.Animation
+    DevTools.API.ApplicationCache
+    DevTools.API.Audits
+    DevTools.API.BackgroundService
+    DevTools.API.Browser
+    DevTools.API.CSS
+    DevTools.API.CacheStorage
+    DevTools.API.Cast
+    DevTools.API.DOM
+    DevTools.API.DOMDebugger
+    DevTools.API.DOMSnapshot
+    DevTools.API.DOMStorage
+    DevTools.API.Database
+    DevTools.API.DeviceOrientation
+    DevTools.API.Emulation
+    DevTools.API.HeadlessExperimental
+    DevTools.API.IO
+    DevTools.API.IndexedDB
+    DevTools.API.Input
+    DevTools.API.Inspector
+    DevTools.API.LayerTree
+    DevTools.API.Log
+    DevTools.API.Memory
+    DevTools.API.Network
+    DevTools.API.Overlay
+    DevTools.API.Page
+    DevTools.API.Performance
+    DevTools.API.Security
+    DevTools.API.ServiceWorker
+    DevTools.API.Storage
+    DevTools.API.SystemInfo
+    DevTools.API.Target
+    DevTools.API.Tethering
+    DevTools.API.Tracing
+    DevTools.API.Fetch
+    DevTools.API.Console
+    DevTools.API.Debugger
+    DevTools.API.HeapProfiler
+    DevTools.API.Profiler
+    DevTools.API.Runtime
+    DevTools.API.Schema
+
+  other-modules:
+    DevTools.API.Accessibility.Types
+    DevTools.API.Animation.Types
+    DevTools.API.ApplicationCache.Types
+    DevTools.API.Audits.Types
+    DevTools.API.BackgroundService.Types
+    DevTools.API.Browser.Types
+    DevTools.API.CSS.Types
+    DevTools.API.CacheStorage.Types
+    DevTools.API.Cast.Types
+    DevTools.API.DOM.Types
+    DevTools.API.DOMDebugger.Types
+    DevTools.API.DOMSnapshot.Types
+    DevTools.API.DOMStorage.Types
+    DevTools.API.Database.Types
+    DevTools.API.DeviceOrientation.Types
+    DevTools.API.Emulation.Types
+    DevTools.API.HeadlessExperimental.Types
+    DevTools.API.IO.Types
+    DevTools.API.IndexedDB.Types
+    DevTools.API.Input.Types
+    DevTools.API.Inspector.Types
+    DevTools.API.LayerTree.Types
+    DevTools.API.Log.Types
+    DevTools.API.Memory.Types
+    DevTools.API.Network.Types
+    DevTools.API.Overlay.Types
+    DevTools.API.Page.Types
+    DevTools.API.Performance.Types
+    DevTools.API.Security.Types
+    DevTools.API.ServiceWorker.Types
+    DevTools.API.Storage.Types
+    DevTools.API.SystemInfo.Types
+    DevTools.API.Target.Types
+    DevTools.API.Tethering.Types
+    DevTools.API.Tracing.Types
+    DevTools.API.Fetch.Types
+    DevTools.API.Console.Types
+    DevTools.API.Debugger.Types
+    DevTools.API.HeapProfiler.Types
+    DevTools.API.Profiler.Types
+    DevTools.API.Runtime.Types
+    DevTools.API.Schema.Types
+
+  build-depends:
+    aeson,
+    base,
+    devtools,
+    deepseq,
+    hashable,
+    text,
+    vector
+
+  ghc-options: -Wall
+
+source-repository head
+  type:     git
+  location: https://github.com/duairc/devtools-api.git

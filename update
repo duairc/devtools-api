@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname -- "$(readlink -f -- "$0")")" 
+
+revision="$(curl -s https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/changelog.md | egrep -o -m1 '[0-9]+')"
+
+(
+    curl -s https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/browser_protocol.json
+    curl -s https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/js_protocol.json
+) | jq -s '{version: (.[0].version), domains: (.[0].domains + .[1].domains)}'\
+    | devtools-api-generate /dev/stdin "$revision"
