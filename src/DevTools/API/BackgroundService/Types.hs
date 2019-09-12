@@ -60,6 +60,10 @@ import           Data.Vector ((!?))
 data ServiceName
     = BackgroundFetch
     | BackgroundSync
+    | PushMessaging
+    | Notifications
+    | PaymentHandler
+    | PeriodicBackgroundSync
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
     , D.NFData, H.Hashable
@@ -71,6 +75,10 @@ instance A.FromJSON ServiceName where
     parseJSON = A.withText "ServiceName" $ \t -> case t of
         "backgroundFetch" -> P.pure BackgroundFetch
         "backgroundSync" -> P.pure BackgroundSync
+        "pushMessaging" -> P.pure PushMessaging
+        "notifications" -> P.pure Notifications
+        "paymentHandler" -> P.pure PaymentHandler
+        "periodicBackgroundSync" -> P.pure PeriodicBackgroundSync
         _ -> P.empty
 
 
@@ -78,6 +86,10 @@ instance A.FromJSON ServiceName where
 instance A.ToJSON ServiceName where
     toJSON BackgroundFetch = "backgroundFetch"
     toJSON BackgroundSync = "backgroundSync"
+    toJSON PushMessaging = "pushMessaging"
+    toJSON Notifications = "notifications"
+    toJSON PaymentHandler = "paymentHandler"
+    toJSON PeriodicBackgroundSync = "periodicBackgroundSync"
 
 
 ------------------------------------------------------------------------------

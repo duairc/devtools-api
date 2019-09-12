@@ -58,23 +58,25 @@ type FrameId = T.Text
 
 ------------------------------------------------------------------------------
 -- | Information about the Frame on the page.
-{-# WARNING unreachableUrl "This feature is marked as EXPERIMENTAL." #-}
+{-# WARNING urlFragment, unreachableUrl "This feature is marked as EXPERIMENTAL." #-}
 data Frame = Frame
     { -- | Frame unique identifier.
-      id :: !T.Text
+      id :: !FrameId
       -- | Parent frame identifier.
     , parentId :: !(P.Maybe T.Text)
       -- | Identifier of the loader associated with this frame.
     , loaderId :: !Network.LoaderId
       -- | Frame's name as specified in the tag.
     , name :: !(P.Maybe T.Text)
-      -- | Frame document's URL.
+      -- | Frame document's URL without fragment.
     , url :: !T.Text
+      -- | Frame document's URL fragment including the '#'.
+    , urlFragment :: !(P.Maybe T.Text)
       -- | Frame document's security origin.
     , securityOrigin :: !T.Text
       -- | Frame document's mimeType as determined by the browser.
     , mimeType :: !T.Text
-      -- | If the frame failed to load, this contains the URL that could not be loaded.
+      -- | If the frame failed to load, this contains the URL that could not be loaded. Note that unlike url above, this URL may contain a fragment.
     , unreachableUrl :: !(P.Maybe T.Text)
     }
   deriving
@@ -93,6 +95,7 @@ instance A.FromJSON Frame where
             <*> _o .: "loaderId"
             <*> _o .:? "name"
             <*> _o .: "url"
+            <*> _o .:? "urlFragment"
             <*> _o .: "securityOrigin"
             <*> _o .: "mimeType"
             <*> _o .:? "unreachableUrl"
@@ -102,38 +105,41 @@ instance A.FromJSON Frame where
             <*> P.maybe P.empty A.parseJSON (_a !? 2)
             <*> P.traverse A.parseJSON (_a !? 3)
             <*> P.maybe P.empty A.parseJSON (_a !? 4)
-            <*> P.maybe P.empty A.parseJSON (_a !? 5)
+            <*> P.traverse A.parseJSON (_a !? 5)
             <*> P.maybe P.empty A.parseJSON (_a !? 6)
-            <*> P.traverse A.parseJSON (_a !? 7)
+            <*> P.maybe P.empty A.parseJSON (_a !? 7)
+            <*> P.traverse A.parseJSON (_a !? 8)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON Frame where
-    toEncoding (Frame _0 _1 _2 _3 _4 _5 _6 _7) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (Frame _0 _1 _2 _3 _4 _5 _6 _7 _8) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "id" .= _0
         , ("parentId" .=) <$> _1
         , P.pure $ "loaderId" .= _2
         , ("name" .=) <$> _3
         , P.pure $ "url" .= _4
-        , P.pure $ "securityOrigin" .= _5
-        , P.pure $ "mimeType" .= _6
-        , ("unreachableUrl" .=) <$> _7
+        , ("urlFragment" .=) <$> _5
+        , P.pure $ "securityOrigin" .= _6
+        , P.pure $ "mimeType" .= _7
+        , ("unreachableUrl" .=) <$> _8
         ]
-    toJSON (Frame _0 _1 _2 _3 _4 _5 _6 _7) = A.object $ P.catMaybes
+    toJSON (Frame _0 _1 _2 _3 _4 _5 _6 _7 _8) = A.object $ P.catMaybes
         [ P.pure $ "id" .= _0
         , ("parentId" .=) <$> _1
         , P.pure $ "loaderId" .= _2
         , ("name" .=) <$> _3
         , P.pure $ "url" .= _4
-        , P.pure $ "securityOrigin" .= _5
-        , P.pure $ "mimeType" .= _6
-        , ("unreachableUrl" .=) <$> _7
+        , ("urlFragment" .=) <$> _5
+        , P.pure $ "securityOrigin" .= _6
+        , P.pure $ "mimeType" .= _7
+        , ("unreachableUrl" .=) <$> _8
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup Frame where
-    Frame _0 _1 _2 _3 _4 _5 _6 _7 <> Frame _ __1 _ __3 _ _ _ __7 = Frame _0 (_1 <|> __1) _2 (_3 <|> __3) _4 _5 _6 (_7 <|> __7)
+    Frame _0 _1 _2 _3 _4 _5 _6 _7 _8 <> Frame _ __1 _ __3 _ __5 _ _ __8 = Frame _0 (_1 <|> __1) _2 (_3 <|> __3) _4 (_5 <|> __5) _6 _7 (_8 <|> __8)
 
 
 ------------------------------------------------------------------------------

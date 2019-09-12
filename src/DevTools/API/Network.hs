@@ -456,7 +456,9 @@ clearBrowserCookies = ClearBrowserCookies
 -- modifications, or blocks it, or completes it with the provided response bytes. If a network
 -- fetch occurs as a result which encounters a redirect an additional Network.requestIntercepted
 -- event will be sent with the same InterceptionId.
-{-# WARNING ContinueInterceptedRequest "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
+{-# DEPRECATED ContinueInterceptedRequest "This may be removed in a future release." #-}
+{-{-# WARNING ContinueInterceptedRequest "This feature is marked as EXPERIMENTAL." #-}-}
 data ContinueInterceptedRequest = ContinueInterceptedRequest
     { interceptionId :: !InterceptionId
       -- | If set this causes the request to fail with the given reason. Passing @Aborted@ for requests
@@ -550,7 +552,9 @@ instance M.Method ContinueInterceptedRequest where
 -- modifications, or blocks it, or completes it with the provided response bytes. If a network
 -- fetch occurs as a result which encounters a redirect an additional Network.requestIntercepted
 -- event will be sent with the same InterceptionId.
-{-# WARNING continueInterceptedRequest "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
+{-# DEPRECATED continueInterceptedRequest "This may be removed in a future release." #-}
+{-{-# WARNING continueInterceptedRequest "This feature is marked as EXPERIMENTAL." #-}-}
 continueInterceptedRequest
     :: InterceptionId
     -> ContinueInterceptedRequest
@@ -2149,7 +2153,9 @@ setExtraHTTPHeaders _0 = SetExtraHTTPHeaders _0
 
 ------------------------------------------------------------------------------
 -- | Sets the requests to intercept that match the provided patterns and optionally resource types.
-{-# WARNING SetRequestInterception "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, please use Fetch.enable instead.
+{-# DEPRECATED SetRequestInterception "This may be removed in a future release." #-}
+{-{-# WARNING SetRequestInterception "This feature is marked as EXPERIMENTAL." #-}-}
 data SetRequestInterception = SetRequestInterception
     { -- | Requests matching any of these patterns will be forwarded and wait for the corresponding
       -- continueInterceptedRequest call.
@@ -2194,7 +2200,9 @@ instance M.Method SetRequestInterception where
 
 ------------------------------------------------------------------------------
 -- | Sets the requests to intercept that match the provided patterns and optionally resource types.
-{-# WARNING setRequestInterception "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, please use Fetch.enable instead.
+{-# DEPRECATED setRequestInterception "This may be removed in a future release." #-}
+{-{-# WARNING setRequestInterception "This feature is marked as EXPERIMENTAL." #-}-}
 setRequestInterception
     :: [RequestPattern]
     -- ^ Requests matching any of these patterns will be forwarded and wait for the corresponding
@@ -2560,7 +2568,9 @@ loadingFinished = P.Proxy
 ------------------------------------------------------------------------------
 -- | Details of an intercepted HTTP request, which must be either allowed, blocked, modified or
 -- mocked.
-{-# WARNING RequestIntercepted "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, use Fetch.requestPaused instead.
+{-# DEPRECATED RequestIntercepted "This may be removed in a future release." #-}
+{-{-# WARNING RequestIntercepted "This feature is marked as EXPERIMENTAL." #-}-}
 data RequestIntercepted = RequestIntercepted
     { -- | Each request the page makes will have a unique id, however if any redirects are encountered
       -- while processing that fetch, they will be reported with the same id as the original fetch.
@@ -2678,7 +2688,9 @@ instance E.Event RequestIntercepted where
 ------------------------------------------------------------------------------
 -- | Details of an intercepted HTTP request, which must be either allowed, blocked, modified or
 -- mocked.
-{-# WARNING requestIntercepted "This feature is marked as EXPERIMENTAL." #-}
+-- Deprecated, use Fetch.requestPaused instead.
+{-# DEPRECATED requestIntercepted "This may be removed in a future release." #-}
+{-{-# WARNING requestIntercepted "This feature is marked as EXPERIMENTAL." #-}-}
 requestIntercepted :: P.Proxy RequestIntercepted
 requestIntercepted = P.Proxy
 
@@ -3465,4 +3477,150 @@ instance E.Event WebSocketWillSendHandshakeRequest where
 -- | Fired when WebSocket is about to initiate handshake.
 webSocketWillSendHandshakeRequest :: P.Proxy WebSocketWillSendHandshakeRequest
 webSocketWillSendHandshakeRequest = P.Proxy
+
+
+------------------------------------------------------------------------------
+-- | Fired when additional information about a requestWillBeSent event is available from the
+-- network stack. Not every requestWillBeSent event will have an additional
+-- requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
+-- or requestWillBeSentExtraInfo will be fired first for the same request.
+{-# WARNING RequestWillBeSentExtraInfo "This feature is marked as EXPERIMENTAL." #-}
+data RequestWillBeSentExtraInfo = RequestWillBeSentExtraInfo
+    { -- | Request identifier. Used to match this information to an existing requestWillBeSent event.
+      requestId :: !RequestId
+      -- | A list of cookies which will not be sent with this request along with corresponding reasons
+      -- for blocking.
+    , blockedCookies :: ![BlockedCookieWithReason]
+      -- | Raw request headers as they will be sent over the wire.
+    , headers :: !Headers
+    }
+  deriving
+    ( P.Eq, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON RequestWillBeSentExtraInfo where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "requestWillBeSentExtraInfo" $ \_o -> RequestWillBeSentExtraInfo
+            <$> _o .: "requestId"
+            <*> _o .: "blockedCookies"
+            <*> _o .: "headers"
+        ago = A.withArray "requestWillBeSentExtraInfo" $ \_a -> RequestWillBeSentExtraInfo
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.maybe P.empty A.parseJSON (_a !? 2)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON RequestWillBeSentExtraInfo where
+    toEncoding (RequestWillBeSentExtraInfo _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "requestId" .= _0
+        , P.pure $ "blockedCookies" .= _1
+        , P.pure $ "headers" .= _2
+        ]
+    toJSON (RequestWillBeSentExtraInfo _0 _1 _2) = A.object $ P.catMaybes
+        [ P.pure $ "requestId" .= _0
+        , P.pure $ "blockedCookies" .= _1
+        , P.pure $ "headers" .= _2
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup RequestWillBeSentExtraInfo where
+    RequestWillBeSentExtraInfo _0 _1 _2 <> RequestWillBeSentExtraInfo _ _ _ = RequestWillBeSentExtraInfo _0 _1 _2
+
+
+------------------------------------------------------------------------------
+instance E.Event RequestWillBeSentExtraInfo where
+    type Result RequestWillBeSentExtraInfo = RequestWillBeSentExtraInfo
+    name _ = "Network.requestWillBeSentExtraInfo"
+
+
+------------------------------------------------------------------------------
+-- | Fired when additional information about a requestWillBeSent event is available from the
+-- network stack. Not every requestWillBeSent event will have an additional
+-- requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
+-- or requestWillBeSentExtraInfo will be fired first for the same request.
+{-# WARNING requestWillBeSentExtraInfo "This feature is marked as EXPERIMENTAL." #-}
+requestWillBeSentExtraInfo :: P.Proxy RequestWillBeSentExtraInfo
+requestWillBeSentExtraInfo = P.Proxy
+
+
+------------------------------------------------------------------------------
+-- | Fired when additional information about a responseReceived event is available from the network
+-- stack. Not every responseReceived event will have an additional responseReceivedExtraInfo for
+-- it, and responseReceivedExtraInfo may be fired before or after responseReceived.
+{-# WARNING ResponseReceivedExtraInfo "This feature is marked as EXPERIMENTAL." #-}
+data ResponseReceivedExtraInfo = ResponseReceivedExtraInfo
+    { -- | Request identifier. Used to match this information to another responseReceived event.
+      requestId :: !RequestId
+      -- | A list of cookies which were not stored from the response along with the corresponding
+      -- reasons for blocking. The cookies here may not be valid due to syntax errors, which
+      -- are represented by the invalid cookie line string instead of a proper cookie.
+    , blockedCookies :: ![BlockedSetCookieWithReason]
+      -- | Raw response headers as they were received over the wire.
+    , headers :: !Headers
+      -- | Raw response header text as it was received over the wire. The raw text may not always be
+      -- available, such as in the case of HTTP\/2 or QUIC.
+    , headersText :: !(P.Maybe T.Text)
+    }
+  deriving
+    ( P.Eq, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON ResponseReceivedExtraInfo where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "responseReceivedExtraInfo" $ \_o -> ResponseReceivedExtraInfo
+            <$> _o .: "requestId"
+            <*> _o .: "blockedCookies"
+            <*> _o .: "headers"
+            <*> _o .:? "headersText"
+        ago = A.withArray "responseReceivedExtraInfo" $ \_a -> ResponseReceivedExtraInfo
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.maybe P.empty A.parseJSON (_a !? 2)
+            <*> P.traverse A.parseJSON (_a !? 3)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON ResponseReceivedExtraInfo where
+    toEncoding (ResponseReceivedExtraInfo _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "requestId" .= _0
+        , P.pure $ "blockedCookies" .= _1
+        , P.pure $ "headers" .= _2
+        , ("headersText" .=) <$> _3
+        ]
+    toJSON (ResponseReceivedExtraInfo _0 _1 _2 _3) = A.object $ P.catMaybes
+        [ P.pure $ "requestId" .= _0
+        , P.pure $ "blockedCookies" .= _1
+        , P.pure $ "headers" .= _2
+        , ("headersText" .=) <$> _3
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup ResponseReceivedExtraInfo where
+    ResponseReceivedExtraInfo _0 _1 _2 _3 <> ResponseReceivedExtraInfo _ _ _ __3 = ResponseReceivedExtraInfo _0 _1 _2 (_3 <|> __3)
+
+
+------------------------------------------------------------------------------
+instance E.Event ResponseReceivedExtraInfo where
+    type Result ResponseReceivedExtraInfo = ResponseReceivedExtraInfo
+    name _ = "Network.responseReceivedExtraInfo"
+
+
+------------------------------------------------------------------------------
+-- | Fired when additional information about a responseReceived event is available from the network
+-- stack. Not every responseReceived event will have an additional responseReceivedExtraInfo for
+-- it, and responseReceivedExtraInfo may be fired before or after responseReceived.
+{-# WARNING responseReceivedExtraInfo "This feature is marked as EXPERIMENTAL." #-}
+responseReceivedExtraInfo :: P.Proxy ResponseReceivedExtraInfo
+responseReceivedExtraInfo = P.Proxy
 

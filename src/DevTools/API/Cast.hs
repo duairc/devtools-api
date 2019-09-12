@@ -335,7 +335,7 @@ stopCasting _0 = StopCasting _0
 -- | This is fired whenever the list of available sinks changes. A sink is a
 -- device or a software surface that you can cast to.
 data SinksUpdated = SinksUpdated
-    { sinkNames :: ![T.Text]
+    { sinks :: ![Sink]
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -348,7 +348,7 @@ instance A.FromJSON SinksUpdated where
     parseJSON v = ago v <|> ogo v
       where
         ogo = A.withObject "sinksUpdated" $ \_o -> SinksUpdated
-            <$> _o .: "sinkNames"
+            <$> _o .: "sinks"
         ago = A.withArray "sinksUpdated" $ \_a -> SinksUpdated
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
 
@@ -356,10 +356,10 @@ instance A.FromJSON SinksUpdated where
 ------------------------------------------------------------------------------
 instance A.ToJSON SinksUpdated where
     toEncoding (SinksUpdated _0) = A.pairs $ P.fold $ P.catMaybes
-        [ P.pure $ "sinkNames" .= _0
+        [ P.pure $ "sinks" .= _0
         ]
     toJSON (SinksUpdated _0) = A.object $ P.catMaybes
-        [ P.pure $ "sinkNames" .= _0
+        [ P.pure $ "sinks" .= _0
         ]
 
 

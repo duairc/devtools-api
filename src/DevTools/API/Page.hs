@@ -50,6 +50,7 @@ import qualified DevTools.Method as M (Method, Result, name)
 import qualified DevTools.API.DOM.Types as DOM
 import qualified DevTools.API.Debugger.Types as Debugger
 import qualified DevTools.API.Emulation.Types as Emulation
+import qualified DevTools.API.IO.Types as IO
 import qualified DevTools.API.Network.Types as Network
 import           DevTools.API.Page.Types
 import qualified DevTools.API.Runtime.Types as Runtime
@@ -2070,6 +2071,7 @@ navigateToHistoryEntry _0 = NavigateToHistoryEntry _0
 
 ------------------------------------------------------------------------------
 -- | Print page as PDF.
+{-# WARNING transferMode "This feature is marked as EXPERIMENTAL." #-}
 data PrintToPDF = PrintToPDF
     { -- | Paper orientation. Defaults to false.
       landscape :: !(P.Maybe P.Bool)
@@ -2112,6 +2114,8 @@ data PrintToPDF = PrintToPDF
       -- | Whether or not to prefer page size as defined by css. Defaults to false,
       -- in which case the content will be scaled to fit the paper size.
     , preferCSSPageSize :: !(P.Maybe P.Bool)
+      -- | return as stream
+    , transferMode :: !(P.Maybe TransferMode)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -2139,6 +2143,7 @@ instance A.FromJSON PrintToPDF where
             <*> _o .:? "headerTemplate"
             <*> _o .:? "footerTemplate"
             <*> _o .:? "preferCSSPageSize"
+            <*> _o .:? "transferMode"
         ago = A.withArray "printToPDF" $ \_a -> PrintToPDF
             <$> P.traverse A.parseJSON (_a !? 0)
             <*> P.traverse A.parseJSON (_a !? 1)
@@ -2155,11 +2160,12 @@ instance A.FromJSON PrintToPDF where
             <*> P.traverse A.parseJSON (_a !? 12)
             <*> P.traverse A.parseJSON (_a !? 13)
             <*> P.traverse A.parseJSON (_a !? 14)
+            <*> P.traverse A.parseJSON (_a !? 15)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON PrintToPDF where
-    toEncoding (PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15) = A.pairs $ P.fold $ P.catMaybes
         [ ("landscape" .=) <$> _0
         , ("displayHeaderFooter" .=) <$> _1
         , ("printBackground" .=) <$> _2
@@ -2175,8 +2181,9 @@ instance A.ToJSON PrintToPDF where
         , ("headerTemplate" .=) <$> _12
         , ("footerTemplate" .=) <$> _13
         , ("preferCSSPageSize" .=) <$> _14
+        , ("transferMode" .=) <$> _15
         ]
-    toJSON (PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14) = A.object $ P.catMaybes
+    toJSON (PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15) = A.object $ P.catMaybes
         [ ("landscape" .=) <$> _0
         , ("displayHeaderFooter" .=) <$> _1
         , ("printBackground" .=) <$> _2
@@ -2192,24 +2199,52 @@ instance A.ToJSON PrintToPDF where
         , ("headerTemplate" .=) <$> _12
         , ("footerTemplate" .=) <$> _13
         , ("preferCSSPageSize" .=) <$> _14
+        , ("transferMode" .=) <$> _15
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup PrintToPDF where
-    PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 <> PrintToPDF __0 __1 __2 __3 __4 __5 __6 __7 __8 __9 __10 __11 __12 __13 __14 = PrintToPDF (_0 <|> __0) (_1 <|> __1) (_2 <|> __2) (_3 <|> __3) (_4 <|> __4) (_5 <|> __5) (_6 <|> __6) (_7 <|> __7) (_8 <|> __8) (_9 <|> __9) (_10 <|> __10) (_11 <|> __11) (_12 <|> __12) (_13 <|> __13) (_14 <|> __14)
+    PrintToPDF _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 <> PrintToPDF __0 __1 __2 __3 __4 __5 __6 __7 __8 __9 __10 __11 __12 __13 __14 __15 = PrintToPDF (_0 <|> __0) (_1 <|> __1) (_2 <|> __2) (_3 <|> __3) (_4 <|> __4) (_5 <|> __5) (_6 <|> __6) (_7 <|> __7) (_8 <|> __8) (_9 <|> __9) (_10 <|> __10) (_11 <|> __11) (_12 <|> __12) (_13 <|> __13) (_14 <|> __14) (_15 <|> __15)
 
 
 ------------------------------------------------------------------------------
 instance P.Monoid PrintToPDF where
-    mempty = PrintToPDF P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty
+    mempty = PrintToPDF P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty
+
+
+------------------------------------------------------------------------------
+data TransferMode
+    = ReturnAsBase64
+    | ReturnAsStream
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON TransferMode where
+    parseJSON = A.withText "TransferMode" $ \t -> case t of
+        "ReturnAsBase64" -> P.pure ReturnAsBase64
+        "ReturnAsStream" -> P.pure ReturnAsStream
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON TransferMode where
+    toJSON ReturnAsBase64 = "ReturnAsBase64"
+    toJSON ReturnAsStream = "ReturnAsStream"
 
 
 ------------------------------------------------------------------------------
 -- | Print page as PDF.
+{-# WARNING stream "This feature is marked as EXPERIMENTAL." #-}
 data PrintToPDFResult = PrintToPDFResult
-    { -- | Base64-encoded pdf data.
+    { -- | Base64-encoded pdf data. Empty if |returnAsStream| is specified.
       data_ :: !T.Text
+      -- | A handle of the stream that holds resulting PDF data.
+    , stream :: !(P.Maybe IO.StreamHandle)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -2223,23 +2258,27 @@ instance A.FromJSON PrintToPDFResult where
       where
         ogo = A.withObject "printToPDFResult" $ \_o -> PrintToPDFResult
             <$> _o .: "data"
+            <*> _o .:? "stream"
         ago = A.withArray "printToPDFResult" $ \_a -> PrintToPDFResult
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.traverse A.parseJSON (_a !? 1)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON PrintToPDFResult where
-    toEncoding (PrintToPDFResult _0) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (PrintToPDFResult _0 _1) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "data" .= _0
+        , ("stream" .=) <$> _1
         ]
-    toJSON (PrintToPDFResult _0) = A.object $ P.catMaybes
+    toJSON (PrintToPDFResult _0 _1) = A.object $ P.catMaybes
         [ P.pure $ "data" .= _0
+        , ("stream" .=) <$> _1
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup PrintToPDFResult where
-    PrintToPDFResult _0 <> PrintToPDFResult _ = PrintToPDFResult _0
+    PrintToPDFResult _0 _1 <> PrintToPDFResult _ __1 = PrintToPDFResult _0 (_1 <|> __1)
 
 
 ------------------------------------------------------------------------------
@@ -2252,7 +2291,7 @@ instance M.Method PrintToPDF where
 -- | Print page as PDF.
 printToPDF
     :: PrintToPDF
-printToPDF = PrintToPDF P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty
+printToPDF = PrintToPDF P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty P.empty
 
 
 ------------------------------------------------------------------------------
@@ -4068,6 +4107,149 @@ waitForDebugger = WaitForDebugger
 
 
 ------------------------------------------------------------------------------
+-- | Intercept file chooser requests and transfer control to protocol clients.
+-- When file chooser interception is enabled, native file chooser dialog is not shown.
+-- Instead, a protocol event @Page.fileChooserOpened@ is emitted.
+-- File chooser can be handled with @page.handleFileChooser@ command.
+{-# WARNING SetInterceptFileChooserDialog "This feature is marked as EXPERIMENTAL." #-}
+data SetInterceptFileChooserDialog = SetInterceptFileChooserDialog
+    { enabled :: !P.Bool
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetInterceptFileChooserDialog where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setInterceptFileChooserDialog" $ \_o -> SetInterceptFileChooserDialog
+            <$> _o .: "enabled"
+        ago = A.withArray "setInterceptFileChooserDialog" $ \_a -> SetInterceptFileChooserDialog
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetInterceptFileChooserDialog where
+    toEncoding (SetInterceptFileChooserDialog _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "enabled" .= _0
+        ]
+    toJSON (SetInterceptFileChooserDialog _0) = A.object $ P.catMaybes
+        [ P.pure $ "enabled" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetInterceptFileChooserDialog where
+    SetInterceptFileChooserDialog _0 <> SetInterceptFileChooserDialog _ = SetInterceptFileChooserDialog _0
+
+
+------------------------------------------------------------------------------
+instance M.Method SetInterceptFileChooserDialog where
+    type Result SetInterceptFileChooserDialog = ()
+    name _ = "Page.setInterceptFileChooserDialog"
+
+
+------------------------------------------------------------------------------
+-- | Intercept file chooser requests and transfer control to protocol clients.
+-- When file chooser interception is enabled, native file chooser dialog is not shown.
+-- Instead, a protocol event @Page.fileChooserOpened@ is emitted.
+-- File chooser can be handled with @page.handleFileChooser@ command.
+{-# WARNING setInterceptFileChooserDialog "This feature is marked as EXPERIMENTAL." #-}
+setInterceptFileChooserDialog
+    :: P.Bool
+    -> SetInterceptFileChooserDialog
+setInterceptFileChooserDialog _0 = SetInterceptFileChooserDialog _0
+
+
+------------------------------------------------------------------------------
+-- | Accepts or cancels an intercepted file chooser dialog.
+{-# WARNING HandleFileChooser "This feature is marked as EXPERIMENTAL." #-}
+data HandleFileChooser = HandleFileChooser
+    { action :: !Action
+      -- | Array of absolute file paths to set, only respected with @accept@ action.
+    , files :: !(P.Maybe [T.Text])
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON HandleFileChooser where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "handleFileChooser" $ \_o -> HandleFileChooser
+            <$> _o .: "action"
+            <*> _o .:? "files"
+        ago = A.withArray "handleFileChooser" $ \_a -> HandleFileChooser
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.traverse A.parseJSON (_a !? 1)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON HandleFileChooser where
+    toEncoding (HandleFileChooser _0 _1) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "action" .= _0
+        , ("files" .=) <$> _1
+        ]
+    toJSON (HandleFileChooser _0 _1) = A.object $ P.catMaybes
+        [ P.pure $ "action" .= _0
+        , ("files" .=) <$> _1
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup HandleFileChooser where
+    HandleFileChooser _0 _1 <> HandleFileChooser _ __1 = HandleFileChooser _0 (_1 <|> __1)
+
+
+------------------------------------------------------------------------------
+data Action
+    = Accept
+    | Cancel
+    | Fallback
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON Action where
+    parseJSON = A.withText "Action" $ \t -> case t of
+        "accept" -> P.pure Accept
+        "cancel" -> P.pure Cancel
+        "fallback" -> P.pure Fallback
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON Action where
+    toJSON Accept = "accept"
+    toJSON Cancel = "cancel"
+    toJSON Fallback = "fallback"
+
+
+------------------------------------------------------------------------------
+instance M.Method HandleFileChooser where
+    type Result HandleFileChooser = ()
+    name _ = "Page.handleFileChooser"
+
+
+------------------------------------------------------------------------------
+-- | Accepts or cancels an intercepted file chooser dialog.
+{-# WARNING handleFileChooser "This feature is marked as EXPERIMENTAL." #-}
+handleFileChooser
+    :: Action
+    -> HandleFileChooser
+handleFileChooser _0 = HandleFileChooser _0 P.empty
+
+
+------------------------------------------------------------------------------
 data DomContentEventFired = DomContentEventFired
     { timestamp :: !Network.MonotonicTime
     }
@@ -4111,6 +4293,78 @@ instance E.Event DomContentEventFired where
 ------------------------------------------------------------------------------
 domContentEventFired :: P.Proxy DomContentEventFired
 domContentEventFired = P.Proxy
+
+
+------------------------------------------------------------------------------
+-- | Emitted only when @page.interceptFileChooser@ is enabled.
+data FileChooserOpened = FileChooserOpened
+    { mode :: !Mode
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON FileChooserOpened where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "fileChooserOpened" $ \_o -> FileChooserOpened
+            <$> _o .: "mode"
+        ago = A.withArray "fileChooserOpened" $ \_a -> FileChooserOpened
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON FileChooserOpened where
+    toEncoding (FileChooserOpened _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "mode" .= _0
+        ]
+    toJSON (FileChooserOpened _0) = A.object $ P.catMaybes
+        [ P.pure $ "mode" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup FileChooserOpened where
+    FileChooserOpened _0 <> FileChooserOpened _ = FileChooserOpened _0
+
+
+------------------------------------------------------------------------------
+data Mode
+    = SelectSingle
+    | SelectMultiple
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON Mode where
+    parseJSON = A.withText "Mode" $ \t -> case t of
+        "selectSingle" -> P.pure SelectSingle
+        "selectMultiple" -> P.pure SelectMultiple
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON Mode where
+    toJSON SelectSingle = "selectSingle"
+    toJSON SelectMultiple = "selectMultiple"
+
+
+------------------------------------------------------------------------------
+instance E.Event FileChooserOpened where
+    type Result FileChooserOpened = FileChooserOpened
+    name _ = "Page.fileChooserOpened"
+
+
+------------------------------------------------------------------------------
+-- | Emitted only when @page.interceptFileChooser@ is enabled.
+fileChooserOpened :: P.Proxy FileChooserOpened
+fileChooserOpened = P.Proxy
 
 
 ------------------------------------------------------------------------------
@@ -4380,7 +4634,7 @@ frameResized = P.Proxy
 -- Navigation may still be cancelled after the event is issued.
 {-# WARNING FrameRequestedNavigation "This feature is marked as EXPERIMENTAL." #-}
 data FrameRequestedNavigation = FrameRequestedNavigation
-    { -- | Id of the frame that has scheduled a navigation.
+    { -- | Id of the frame that is being navigated.
       frameId :: !FrameId
       -- | The reason for the navigation.
     , reason :: !ClientNavigationReason
@@ -4610,6 +4864,63 @@ instance E.Event FrameStoppedLoading where
 {-# WARNING frameStoppedLoading "This feature is marked as EXPERIMENTAL." #-}
 frameStoppedLoading :: P.Proxy FrameStoppedLoading
 frameStoppedLoading = P.Proxy
+
+
+------------------------------------------------------------------------------
+-- | Fired when page is about to start a download.
+{-# WARNING DownloadWillBegin "This feature is marked as EXPERIMENTAL." #-}
+data DownloadWillBegin = DownloadWillBegin
+    { -- | Id of the frame that caused download to begin.
+      frameId :: !FrameId
+      -- | URL of the resource being downloaded.
+    , url :: !T.Text
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON DownloadWillBegin where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "downloadWillBegin" $ \_o -> DownloadWillBegin
+            <$> _o .: "frameId"
+            <*> _o .: "url"
+        ago = A.withArray "downloadWillBegin" $ \_a -> DownloadWillBegin
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON DownloadWillBegin where
+    toEncoding (DownloadWillBegin _0 _1) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "frameId" .= _0
+        , P.pure $ "url" .= _1
+        ]
+    toJSON (DownloadWillBegin _0 _1) = A.object $ P.catMaybes
+        [ P.pure $ "frameId" .= _0
+        , P.pure $ "url" .= _1
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup DownloadWillBegin where
+    DownloadWillBegin _0 _1 <> DownloadWillBegin _ _ = DownloadWillBegin _0 _1
+
+
+------------------------------------------------------------------------------
+instance E.Event DownloadWillBegin where
+    type Result DownloadWillBegin = DownloadWillBegin
+    name _ = "Page.downloadWillBegin"
+
+
+------------------------------------------------------------------------------
+-- | Fired when page is about to start a download.
+{-# WARNING downloadWillBegin "This feature is marked as EXPERIMENTAL." #-}
+downloadWillBegin :: P.Proxy DownloadWillBegin
+downloadWillBegin = P.Proxy
 
 
 ------------------------------------------------------------------------------

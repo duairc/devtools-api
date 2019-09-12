@@ -1134,7 +1134,6 @@ getFlattenedDocument = GetFlattenedDocument P.empty P.empty
 ------------------------------------------------------------------------------
 -- | Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
 -- either returned or not.
-{-# WARNING GetNodeForLocation "This feature is marked as EXPERIMENTAL." #-}
 data GetNodeForLocation = GetNodeForLocation
     { -- | X coordinate.
       x :: !P.Int
@@ -1142,6 +1141,8 @@ data GetNodeForLocation = GetNodeForLocation
     , y :: !P.Int
       -- | False to skip to the nearest non-UA shadow root ancestor (default: false).
     , includeUserAgentShadowDOM :: !(P.Maybe P.Bool)
+      -- | Whether to ignore pointer-events: none on elements and hit test them.
+    , ignorePointerEventsNone :: !(P.Maybe P.Bool)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -1157,38 +1158,43 @@ instance A.FromJSON GetNodeForLocation where
             <$> _o .: "x"
             <*> _o .: "y"
             <*> _o .:? "includeUserAgentShadowDOM"
+            <*> _o .:? "ignorePointerEventsNone"
         ago = A.withArray "getNodeForLocation" $ \_a -> GetNodeForLocation
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
             <*> P.maybe P.empty A.parseJSON (_a !? 1)
             <*> P.traverse A.parseJSON (_a !? 2)
+            <*> P.traverse A.parseJSON (_a !? 3)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON GetNodeForLocation where
-    toEncoding (GetNodeForLocation _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (GetNodeForLocation _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "x" .= _0
         , P.pure $ "y" .= _1
         , ("includeUserAgentShadowDOM" .=) <$> _2
+        , ("ignorePointerEventsNone" .=) <$> _3
         ]
-    toJSON (GetNodeForLocation _0 _1 _2) = A.object $ P.catMaybes
+    toJSON (GetNodeForLocation _0 _1 _2 _3) = A.object $ P.catMaybes
         [ P.pure $ "x" .= _0
         , P.pure $ "y" .= _1
         , ("includeUserAgentShadowDOM" .=) <$> _2
+        , ("ignorePointerEventsNone" .=) <$> _3
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup GetNodeForLocation where
-    GetNodeForLocation _0 _1 _2 <> GetNodeForLocation _ _ __2 = GetNodeForLocation _0 _1 (_2 <|> __2)
+    GetNodeForLocation _0 _1 _2 _3 <> GetNodeForLocation _ _ __2 __3 = GetNodeForLocation _0 _1 (_2 <|> __2) (_3 <|> __3)
 
 
 ------------------------------------------------------------------------------
 -- | Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
 -- either returned or not.
-{-# WARNING GetNodeForLocationResult "This feature is marked as EXPERIMENTAL." #-}
 data GetNodeForLocationResult = GetNodeForLocationResult
     { -- | Resulting node.
       backendNodeId :: !BackendNodeId
+      -- | Frame this node belongs to.
+    , frameId :: !Page.FrameId
       -- | Id of the node at given coordinates, only when enabled and requested document.
     , nodeId :: !(P.Maybe NodeId)
     }
@@ -1204,27 +1210,31 @@ instance A.FromJSON GetNodeForLocationResult where
       where
         ogo = A.withObject "getNodeForLocationResult" $ \_o -> GetNodeForLocationResult
             <$> _o .: "backendNodeId"
+            <*> _o .: "frameId"
             <*> _o .:? "nodeId"
         ago = A.withArray "getNodeForLocationResult" $ \_a -> GetNodeForLocationResult
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
-            <*> P.traverse A.parseJSON (_a !? 1)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.traverse A.parseJSON (_a !? 2)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON GetNodeForLocationResult where
-    toEncoding (GetNodeForLocationResult _0 _1) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (GetNodeForLocationResult _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "backendNodeId" .= _0
-        , ("nodeId" .=) <$> _1
+        , P.pure $ "frameId" .= _1
+        , ("nodeId" .=) <$> _2
         ]
-    toJSON (GetNodeForLocationResult _0 _1) = A.object $ P.catMaybes
+    toJSON (GetNodeForLocationResult _0 _1 _2) = A.object $ P.catMaybes
         [ P.pure $ "backendNodeId" .= _0
-        , ("nodeId" .=) <$> _1
+        , P.pure $ "frameId" .= _1
+        , ("nodeId" .=) <$> _2
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup GetNodeForLocationResult where
-    GetNodeForLocationResult _0 _1 <> GetNodeForLocationResult _ __1 = GetNodeForLocationResult _0 (_1 <|> __1)
+    GetNodeForLocationResult _0 _1 _2 <> GetNodeForLocationResult _ _ __2 = GetNodeForLocationResult _0 _1 (_2 <|> __2)
 
 
 ------------------------------------------------------------------------------
@@ -1236,7 +1246,6 @@ instance M.Method GetNodeForLocation where
 ------------------------------------------------------------------------------
 -- | Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
 -- either returned or not.
-{-# WARNING getNodeForLocation "This feature is marked as EXPERIMENTAL." #-}
 getNodeForLocation
     :: P.Int
     -- ^ X coordinate.
@@ -1245,7 +1254,7 @@ getNodeForLocation
     -- ^ Y coordinate.
 
     -> GetNodeForLocation
-getNodeForLocation _0 _1 = GetNodeForLocation _0 _1 P.empty
+getNodeForLocation _0 _1 = GetNodeForLocation _0 _1 P.empty P.empty
 
 
 ------------------------------------------------------------------------------
@@ -3030,6 +3039,159 @@ setFileInputFiles
 
     -> SetFileInputFiles
 setFileInputFiles _0 = SetFileInputFiles _0 P.empty P.empty P.empty
+
+
+------------------------------------------------------------------------------
+-- | Sets if stack traces should be captured for Nodes. See @Node.getNodeStackTraces@. Default is disabled.
+{-# WARNING SetNodeStackTracesEnabled "This feature is marked as EXPERIMENTAL." #-}
+data SetNodeStackTracesEnabled = SetNodeStackTracesEnabled
+    { -- | Enable or disable.
+      enable_ :: !P.Bool
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetNodeStackTracesEnabled where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setNodeStackTracesEnabled" $ \_o -> SetNodeStackTracesEnabled
+            <$> _o .: "enable"
+        ago = A.withArray "setNodeStackTracesEnabled" $ \_a -> SetNodeStackTracesEnabled
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetNodeStackTracesEnabled where
+    toEncoding (SetNodeStackTracesEnabled _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "enable" .= _0
+        ]
+    toJSON (SetNodeStackTracesEnabled _0) = A.object $ P.catMaybes
+        [ P.pure $ "enable" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetNodeStackTracesEnabled where
+    SetNodeStackTracesEnabled _0 <> SetNodeStackTracesEnabled _ = SetNodeStackTracesEnabled _0
+
+
+------------------------------------------------------------------------------
+instance M.Method SetNodeStackTracesEnabled where
+    type Result SetNodeStackTracesEnabled = ()
+    name _ = "DOM.setNodeStackTracesEnabled"
+
+
+------------------------------------------------------------------------------
+-- | Sets if stack traces should be captured for Nodes. See @Node.getNodeStackTraces@. Default is disabled.
+{-# WARNING setNodeStackTracesEnabled "This feature is marked as EXPERIMENTAL." #-}
+setNodeStackTracesEnabled
+    :: P.Bool
+    -- ^ Enable or disable.
+
+    -> SetNodeStackTracesEnabled
+setNodeStackTracesEnabled _0 = SetNodeStackTracesEnabled _0
+
+
+------------------------------------------------------------------------------
+-- | Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+{-# WARNING GetNodeStackTraces "This feature is marked as EXPERIMENTAL." #-}
+data GetNodeStackTraces = GetNodeStackTraces
+    { -- | Id of the node to get stack traces for.
+      nodeId :: !NodeId
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON GetNodeStackTraces where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "getNodeStackTraces" $ \_o -> GetNodeStackTraces
+            <$> _o .: "nodeId"
+        ago = A.withArray "getNodeStackTraces" $ \_a -> GetNodeStackTraces
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON GetNodeStackTraces where
+    toEncoding (GetNodeStackTraces _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "nodeId" .= _0
+        ]
+    toJSON (GetNodeStackTraces _0) = A.object $ P.catMaybes
+        [ P.pure $ "nodeId" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup GetNodeStackTraces where
+    GetNodeStackTraces _0 <> GetNodeStackTraces _ = GetNodeStackTraces _0
+
+
+------------------------------------------------------------------------------
+-- | Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+{-# WARNING GetNodeStackTracesResult "This feature is marked as EXPERIMENTAL." #-}
+data GetNodeStackTracesResult = GetNodeStackTracesResult
+    { -- | Creation stack trace, if available.
+      creation :: !(P.Maybe Runtime.StackTrace)
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON GetNodeStackTracesResult where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "getNodeStackTracesResult" $ \_o -> GetNodeStackTracesResult
+            <$> _o .:? "creation"
+        ago = A.withArray "getNodeStackTracesResult" $ \_a -> GetNodeStackTracesResult
+            <$> P.traverse A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON GetNodeStackTracesResult where
+    toEncoding (GetNodeStackTracesResult _0) = A.pairs $ P.fold $ P.catMaybes
+        [ ("creation" .=) <$> _0
+        ]
+    toJSON (GetNodeStackTracesResult _0) = A.object $ P.catMaybes
+        [ ("creation" .=) <$> _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup GetNodeStackTracesResult where
+    GetNodeStackTracesResult _0 <> GetNodeStackTracesResult __0 = GetNodeStackTracesResult (_0 <|> __0)
+
+
+------------------------------------------------------------------------------
+instance P.Monoid GetNodeStackTracesResult where
+    mempty = GetNodeStackTracesResult P.empty
+
+
+------------------------------------------------------------------------------
+instance M.Method GetNodeStackTraces where
+    type Result GetNodeStackTraces = GetNodeStackTracesResult
+    name _ = "DOM.getNodeStackTraces"
+
+
+------------------------------------------------------------------------------
+-- | Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+{-# WARNING getNodeStackTraces "This feature is marked as EXPERIMENTAL." #-}
+getNodeStackTraces
+    :: NodeId
+    -- ^ Id of the node to get stack traces for.
+
+    -> GetNodeStackTraces
+getNodeStackTraces _0 = GetNodeStackTraces _0
 
 
 ------------------------------------------------------------------------------

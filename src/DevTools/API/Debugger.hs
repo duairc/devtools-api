@@ -1442,6 +1442,120 @@ setBreakpoint _0 = SetBreakpoint _0 P.empty
 
 
 ------------------------------------------------------------------------------
+-- | Sets instrumentation breakpoint.
+data SetInstrumentationBreakpoint = SetInstrumentationBreakpoint
+    { -- | Instrumentation name.
+      instrumentation :: !Instrumentation
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetInstrumentationBreakpoint where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setInstrumentationBreakpoint" $ \_o -> SetInstrumentationBreakpoint
+            <$> _o .: "instrumentation"
+        ago = A.withArray "setInstrumentationBreakpoint" $ \_a -> SetInstrumentationBreakpoint
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetInstrumentationBreakpoint where
+    toEncoding (SetInstrumentationBreakpoint _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "instrumentation" .= _0
+        ]
+    toJSON (SetInstrumentationBreakpoint _0) = A.object $ P.catMaybes
+        [ P.pure $ "instrumentation" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetInstrumentationBreakpoint where
+    SetInstrumentationBreakpoint _0 <> SetInstrumentationBreakpoint _ = SetInstrumentationBreakpoint _0
+
+
+------------------------------------------------------------------------------
+data Instrumentation
+    = BeforeScriptExecution
+    | BeforeScriptWithSourceMapExecution
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON Instrumentation where
+    parseJSON = A.withText "Instrumentation" $ \t -> case t of
+        "beforeScriptExecution" -> P.pure BeforeScriptExecution
+        "beforeScriptWithSourceMapExecution" -> P.pure BeforeScriptWithSourceMapExecution
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON Instrumentation where
+    toJSON BeforeScriptExecution = "beforeScriptExecution"
+    toJSON BeforeScriptWithSourceMapExecution = "beforeScriptWithSourceMapExecution"
+
+
+------------------------------------------------------------------------------
+-- | Sets instrumentation breakpoint.
+data SetInstrumentationBreakpointResult = SetInstrumentationBreakpointResult
+    { -- | Id of the created breakpoint for further reference.
+      breakpointId :: !BreakpointId
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetInstrumentationBreakpointResult where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setInstrumentationBreakpointResult" $ \_o -> SetInstrumentationBreakpointResult
+            <$> _o .: "breakpointId"
+        ago = A.withArray "setInstrumentationBreakpointResult" $ \_a -> SetInstrumentationBreakpointResult
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetInstrumentationBreakpointResult where
+    toEncoding (SetInstrumentationBreakpointResult _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "breakpointId" .= _0
+        ]
+    toJSON (SetInstrumentationBreakpointResult _0) = A.object $ P.catMaybes
+        [ P.pure $ "breakpointId" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetInstrumentationBreakpointResult where
+    SetInstrumentationBreakpointResult _0 <> SetInstrumentationBreakpointResult _ = SetInstrumentationBreakpointResult _0
+
+
+------------------------------------------------------------------------------
+instance M.Method SetInstrumentationBreakpoint where
+    type Result SetInstrumentationBreakpoint = SetInstrumentationBreakpointResult
+    name _ = "Debugger.setInstrumentationBreakpoint"
+
+
+------------------------------------------------------------------------------
+-- | Sets instrumentation breakpoint.
+setInstrumentationBreakpoint
+    :: Instrumentation
+    -- ^ Instrumentation name.
+
+    -> SetInstrumentationBreakpoint
+setInstrumentationBreakpoint _0 = SetInstrumentationBreakpoint _0
+
+
+------------------------------------------------------------------------------
 -- | Sets JavaScript breakpoint at given location specified either by URL or URL regex. Once this
 -- command is issued, all existing parsed scripts will have breakpoints resolved and returned in
 -- @locations@ property. Further matching script parsing will result in subsequent
@@ -2443,16 +2557,17 @@ instance P.Semigroup Paused where
 
 ------------------------------------------------------------------------------
 data Reason
-    = XHR
+    = Ambiguous
+    | Assert
+    | DebugCommand
     | DOM
     | EventListener
     | Exception
-    | Assert
-    | DebugCommand
-    | PromiseRejection
+    | Instrumentation
     | OOM
     | Other
-    | Ambiguous
+    | PromiseRejection
+    | XHR
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
     , D.NFData, H.Hashable
@@ -2462,31 +2577,33 @@ data Reason
 ------------------------------------------------------------------------------
 instance A.FromJSON Reason where
     parseJSON = A.withText "Reason" $ \t -> case t of
-        "XHR" -> P.pure XHR
+        "ambiguous" -> P.pure Ambiguous
+        "assert" -> P.pure Assert
+        "debugCommand" -> P.pure DebugCommand
         "DOM" -> P.pure DOM
         "EventListener" -> P.pure EventListener
         "exception" -> P.pure Exception
-        "assert" -> P.pure Assert
-        "debugCommand" -> P.pure DebugCommand
-        "promiseRejection" -> P.pure PromiseRejection
+        "instrumentation" -> P.pure Instrumentation
         "OOM" -> P.pure OOM
         "other" -> P.pure Other
-        "ambiguous" -> P.pure Ambiguous
+        "promiseRejection" -> P.pure PromiseRejection
+        "XHR" -> P.pure XHR
         _ -> P.empty
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON Reason where
-    toJSON XHR = "XHR"
+    toJSON Ambiguous = "ambiguous"
+    toJSON Assert = "assert"
+    toJSON DebugCommand = "debugCommand"
     toJSON DOM = "DOM"
     toJSON EventListener = "EventListener"
     toJSON Exception = "exception"
-    toJSON Assert = "assert"
-    toJSON DebugCommand = "debugCommand"
-    toJSON PromiseRejection = "promiseRejection"
+    toJSON Instrumentation = "instrumentation"
     toJSON OOM = "OOM"
     toJSON Other = "other"
-    toJSON Ambiguous = "ambiguous"
+    toJSON PromiseRejection = "promiseRejection"
+    toJSON XHR = "XHR"
 
 
 ------------------------------------------------------------------------------

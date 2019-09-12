@@ -177,6 +177,10 @@ enable = Enable
 data GetHighlightObjectForTest = GetHighlightObjectForTest
     { -- | Id of the node to get highlight object for.
       nodeId :: !DOM.NodeId
+      -- | Whether to include distance info.
+    , includeDistance :: !(P.Maybe P.Bool)
+      -- | Whether to include style info.
+    , includeStyle :: !(P.Maybe P.Bool)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -190,23 +194,31 @@ instance A.FromJSON GetHighlightObjectForTest where
       where
         ogo = A.withObject "getHighlightObjectForTest" $ \_o -> GetHighlightObjectForTest
             <$> _o .: "nodeId"
+            <*> _o .:? "includeDistance"
+            <*> _o .:? "includeStyle"
         ago = A.withArray "getHighlightObjectForTest" $ \_a -> GetHighlightObjectForTest
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.traverse A.parseJSON (_a !? 1)
+            <*> P.traverse A.parseJSON (_a !? 2)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON GetHighlightObjectForTest where
-    toEncoding (GetHighlightObjectForTest _0) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (GetHighlightObjectForTest _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "nodeId" .= _0
+        , ("includeDistance" .=) <$> _1
+        , ("includeStyle" .=) <$> _2
         ]
-    toJSON (GetHighlightObjectForTest _0) = A.object $ P.catMaybes
+    toJSON (GetHighlightObjectForTest _0 _1 _2) = A.object $ P.catMaybes
         [ P.pure $ "nodeId" .= _0
+        , ("includeDistance" .=) <$> _1
+        , ("includeStyle" .=) <$> _2
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup GetHighlightObjectForTest where
-    GetHighlightObjectForTest _0 <> GetHighlightObjectForTest _ = GetHighlightObjectForTest _0
+    GetHighlightObjectForTest _0 _1 _2 <> GetHighlightObjectForTest _ __1 __2 = GetHighlightObjectForTest _0 (_1 <|> __1) (_2 <|> __2)
 
 
 ------------------------------------------------------------------------------
@@ -259,7 +271,7 @@ getHighlightObjectForTest
     -- ^ Id of the node to get highlight object for.
 
     -> GetHighlightObjectForTest
-getHighlightObjectForTest _0 = GetHighlightObjectForTest _0
+getHighlightObjectForTest _0 = GetHighlightObjectForTest _0 P.empty P.empty
 
 
 ------------------------------------------------------------------------------
@@ -941,6 +953,59 @@ setShowPaintRects
 
     -> SetShowPaintRects
 setShowPaintRects _0 = SetShowPaintRects _0
+
+
+------------------------------------------------------------------------------
+-- | Requests that backend shows layout shift regions
+data SetShowLayoutShiftRegions = SetShowLayoutShiftRegions
+    { -- | True for showing layout shift regions
+      result :: !P.Bool
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetShowLayoutShiftRegions where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setShowLayoutShiftRegions" $ \_o -> SetShowLayoutShiftRegions
+            <$> _o .: "result"
+        ago = A.withArray "setShowLayoutShiftRegions" $ \_a -> SetShowLayoutShiftRegions
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetShowLayoutShiftRegions where
+    toEncoding (SetShowLayoutShiftRegions _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "result" .= _0
+        ]
+    toJSON (SetShowLayoutShiftRegions _0) = A.object $ P.catMaybes
+        [ P.pure $ "result" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetShowLayoutShiftRegions where
+    SetShowLayoutShiftRegions _0 <> SetShowLayoutShiftRegions _ = SetShowLayoutShiftRegions _0
+
+
+------------------------------------------------------------------------------
+instance M.Method SetShowLayoutShiftRegions where
+    type Result SetShowLayoutShiftRegions = ()
+    name _ = "Overlay.setShowLayoutShiftRegions"
+
+
+------------------------------------------------------------------------------
+-- | Requests that backend shows layout shift regions
+setShowLayoutShiftRegions
+    :: P.Bool
+    -- ^ True for showing layout shift regions
+
+    -> SetShowLayoutShiftRegions
+setShowLayoutShiftRegions _0 = SetShowLayoutShiftRegions _0
 
 
 ------------------------------------------------------------------------------

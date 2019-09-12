@@ -415,7 +415,7 @@ certificateError = P.Proxy
 
 ------------------------------------------------------------------------------
 -- | The security state of the page changed.
-{-# DEPRECATED insecureContentStatus "This may be removed in a future release." #-}
+{-# DEPRECATED schemeIsCryptographic, insecureContentStatus "This may be removed in a future release." #-}
 data SecurityStateChanged = SecurityStateChanged
     { -- | Security state.
       securityState :: !SecurityState

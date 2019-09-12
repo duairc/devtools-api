@@ -1,5 +1,5 @@
 name:           devtools-api
-version:        1.3.651096
+version:        1.3.694415
 synopsis:       Haskell bindings to the Chrome DevTools Protocol (bindings)
 description:    https://github.com/ChromeDevTools/devtools-protocol
 license:        MPL-2.0
@@ -55,6 +55,9 @@ library
     DevTools.API.Tethering
     DevTools.API.Tracing
     DevTools.API.Fetch
+    DevTools.API.WebAudio
+    DevTools.API.WebAuthn
+    DevTools.API.Media
     DevTools.API.Console
     DevTools.API.Debugger
     DevTools.API.HeapProfiler
@@ -99,6 +102,9 @@ library
     DevTools.API.Tethering.Types
     DevTools.API.Tracing.Types
     DevTools.API.Fetch.Types
+    DevTools.API.WebAudio.Types
+    DevTools.API.WebAuthn.Types
+    DevTools.API.Media.Types
     DevTools.API.Console.Types
     DevTools.API.Debugger.Types
     DevTools.API.HeapProfiler.Types

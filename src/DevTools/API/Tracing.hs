@@ -593,8 +593,11 @@ dataCollected = P.Proxy
 -- | Signals that tracing is stopped and there is no trace buffers pending flush, all data were
 -- delivered via dataCollected events.
 data TracingComplete = TracingComplete
-    { -- | A handle of the stream that holds resulting trace data.
-      stream :: !(P.Maybe IO.StreamHandle)
+    { -- | Indicates whether some trace data is known to have been lost, e.g. because the trace ring
+      -- buffer wrapped around.
+      dataLossOccurred :: !P.Bool
+      -- | A handle of the stream that holds resulting trace data.
+    , stream :: !(P.Maybe IO.StreamHandle)
       -- | Trace data format of returned stream.
     , traceFormat :: !(P.Maybe StreamFormat)
       -- | Compression format of returned stream.
@@ -611,37 +614,36 @@ instance A.FromJSON TracingComplete where
     parseJSON v = ago v <|> ogo v
       where
         ogo = A.withObject "tracingComplete" $ \_o -> TracingComplete
-            <$> _o .:? "stream"
+            <$> _o .: "dataLossOccurred"
+            <*> _o .:? "stream"
             <*> _o .:? "traceFormat"
             <*> _o .:? "streamCompression"
         ago = A.withArray "tracingComplete" $ \_a -> TracingComplete
-            <$> P.traverse A.parseJSON (_a !? 0)
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
             <*> P.traverse A.parseJSON (_a !? 1)
             <*> P.traverse A.parseJSON (_a !? 2)
+            <*> P.traverse A.parseJSON (_a !? 3)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON TracingComplete where
-    toEncoding (TracingComplete _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
-        [ ("stream" .=) <$> _0
-        , ("traceFormat" .=) <$> _1
-        , ("streamCompression" .=) <$> _2
+    toEncoding (TracingComplete _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "dataLossOccurred" .= _0
+        , ("stream" .=) <$> _1
+        , ("traceFormat" .=) <$> _2
+        , ("streamCompression" .=) <$> _3
         ]
-    toJSON (TracingComplete _0 _1 _2) = A.object $ P.catMaybes
-        [ ("stream" .=) <$> _0
-        , ("traceFormat" .=) <$> _1
-        , ("streamCompression" .=) <$> _2
+    toJSON (TracingComplete _0 _1 _2 _3) = A.object $ P.catMaybes
+        [ P.pure $ "dataLossOccurred" .= _0
+        , ("stream" .=) <$> _1
+        , ("traceFormat" .=) <$> _2
+        , ("streamCompression" .=) <$> _3
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup TracingComplete where
-    TracingComplete _0 _1 _2 <> TracingComplete __0 __1 __2 = TracingComplete (_0 <|> __0) (_1 <|> __1) (_2 <|> __2)
-
-
-------------------------------------------------------------------------------
-instance P.Monoid TracingComplete where
-    mempty = TracingComplete P.empty P.empty P.empty
+    TracingComplete _0 _1 _2 _3 <> TracingComplete _ __1 __2 __3 = TracingComplete _0 (_1 <|> __1) (_2 <|> __2) (_3 <|> __3)
 
 
 ------------------------------------------------------------------------------

@@ -303,6 +303,9 @@ enable = Enable
 
 ------------------------------------------------------------------------------
 -- | Issued when the target starts or stops needing BeginFrames.
+-- Deprecated. Issue beginFrame unconditionally instead and use result from
+-- beginFrame to detect whether the frames were suppressed.
+{-# DEPRECATED NeedsBeginFramesChanged "This may be removed in a future release." #-}
 data NeedsBeginFramesChanged = NeedsBeginFramesChanged
     { -- | True if BeginFrames are needed, false otherwise.
       needsBeginFrames :: !P.Bool
@@ -346,6 +349,9 @@ instance E.Event NeedsBeginFramesChanged where
 
 ------------------------------------------------------------------------------
 -- | Issued when the target starts or stops needing BeginFrames.
+-- Deprecated. Issue beginFrame unconditionally instead and use result from
+-- beginFrame to detect whether the frames were suppressed.
+{-# DEPRECATED needsBeginFramesChanged "This may be removed in a future release." #-}
 needsBeginFramesChanged :: P.Proxy NeedsBeginFramesChanged
 needsBeginFramesChanged = P.Proxy
 

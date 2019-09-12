@@ -1277,6 +1277,64 @@ setVirtualTimePolicy _0 = SetVirtualTimePolicy _0 P.empty P.empty P.empty P.empt
 
 
 ------------------------------------------------------------------------------
+-- | Overrides default host system timezone with the specified one.
+{-# WARNING SetTimezoneOverride "This feature is marked as EXPERIMENTAL." #-}
+data SetTimezoneOverride = SetTimezoneOverride
+    { -- | The timezone identifier. If empty, disables the override and
+      -- restores default host system timezone.
+      timezoneId :: !T.Text
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetTimezoneOverride where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setTimezoneOverride" $ \_o -> SetTimezoneOverride
+            <$> _o .: "timezoneId"
+        ago = A.withArray "setTimezoneOverride" $ \_a -> SetTimezoneOverride
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetTimezoneOverride where
+    toEncoding (SetTimezoneOverride _0) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "timezoneId" .= _0
+        ]
+    toJSON (SetTimezoneOverride _0) = A.object $ P.catMaybes
+        [ P.pure $ "timezoneId" .= _0
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetTimezoneOverride where
+    SetTimezoneOverride _0 <> SetTimezoneOverride _ = SetTimezoneOverride _0
+
+
+------------------------------------------------------------------------------
+instance M.Method SetTimezoneOverride where
+    type Result SetTimezoneOverride = ()
+    name _ = "Emulation.setTimezoneOverride"
+
+
+------------------------------------------------------------------------------
+-- | Overrides default host system timezone with the specified one.
+{-# WARNING setTimezoneOverride "This feature is marked as EXPERIMENTAL." #-}
+setTimezoneOverride
+    :: T.Text
+    -- ^ The timezone identifier. If empty, disables the override and
+
+    -- restores default host system timezone.
+
+    -> SetTimezoneOverride
+setTimezoneOverride _0 = SetTimezoneOverride _0
+
+
+------------------------------------------------------------------------------
 -- | Resizes the frame\/viewport of the page. Note that this does not affect the frame's container
 -- (e.g. browser window). Can be used to produce screenshots of the specified size. Not supported
 -- on Android.

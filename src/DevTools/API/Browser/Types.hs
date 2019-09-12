@@ -167,10 +167,13 @@ data PermissionType
     | MidiSysex
     | Notifications
     | PaymentHandler
+    | PeriodicBackgroundSync
     | ProtectedMediaIdentifier
     | Sensors
     | VideoCapture
     | IdleDetection
+    | WakeLockScreen
+    | WakeLockSystem
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
     , D.NFData, H.Hashable
@@ -193,10 +196,13 @@ instance A.FromJSON PermissionType where
         "midiSysex" -> P.pure MidiSysex
         "notifications" -> P.pure Notifications
         "paymentHandler" -> P.pure PaymentHandler
+        "periodicBackgroundSync" -> P.pure PeriodicBackgroundSync
         "protectedMediaIdentifier" -> P.pure ProtectedMediaIdentifier
         "sensors" -> P.pure Sensors
         "videoCapture" -> P.pure VideoCapture
         "idleDetection" -> P.pure IdleDetection
+        "wakeLockScreen" -> P.pure WakeLockScreen
+        "wakeLockSystem" -> P.pure WakeLockSystem
         _ -> P.empty
 
 
@@ -215,10 +221,100 @@ instance A.ToJSON PermissionType where
     toJSON MidiSysex = "midiSysex"
     toJSON Notifications = "notifications"
     toJSON PaymentHandler = "paymentHandler"
+    toJSON PeriodicBackgroundSync = "periodicBackgroundSync"
     toJSON ProtectedMediaIdentifier = "protectedMediaIdentifier"
     toJSON Sensors = "sensors"
     toJSON VideoCapture = "videoCapture"
     toJSON IdleDetection = "idleDetection"
+    toJSON WakeLockScreen = "wakeLockScreen"
+    toJSON WakeLockSystem = "wakeLockSystem"
+
+
+------------------------------------------------------------------------------
+{-# WARNING PermissionSetting "This feature is marked as EXPERIMENTAL." #-}
+data PermissionSetting
+    = Granted
+    | Denied
+    | Prompt
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON PermissionSetting where
+    parseJSON = A.withText "PermissionSetting" $ \t -> case t of
+        "granted" -> P.pure Granted
+        "denied" -> P.pure Denied
+        "prompt" -> P.pure Prompt
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON PermissionSetting where
+    toJSON Granted = "granted"
+    toJSON Denied = "denied"
+    toJSON Prompt = "prompt"
+
+
+------------------------------------------------------------------------------
+-- | Definition of PermissionDescriptor defined in the Permissions API:
+-- https:\/\/w3c.github.io\/permissions\/#dictdef-permissiondescriptor.
+{-# WARNING PermissionDescriptor "This feature is marked as EXPERIMENTAL." #-}
+data PermissionDescriptor = PermissionDescriptor
+    { -- | Name of permission.
+      -- See https:\/\/cs.chromium.org\/chromium\/src\/third_party\/blink\/renderer\/modules\/permissions\/permission_descriptor.idl for valid permission names.
+      name :: !T.Text
+      -- | For "midi" permission, may also specify sysex control.
+    , sysex :: !(P.Maybe P.Bool)
+      -- | For "push" permission, may specify userVisibleOnly.
+      -- Note that userVisibleOnly = true is the only currently supported type.
+    , userVisibleOnly :: !(P.Maybe P.Bool)
+      -- | For "wake-lock" permission, must specify type as either "screen" or "system".
+    , type_ :: !(P.Maybe T.Text)
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON PermissionDescriptor where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "PermissionDescriptor" $ \_o -> PermissionDescriptor
+            <$> _o .: "name"
+            <*> _o .:? "sysex"
+            <*> _o .:? "userVisibleOnly"
+            <*> _o .:? "type"
+        ago = A.withArray "PermissionDescriptor" $ \_a -> PermissionDescriptor
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.traverse A.parseJSON (_a !? 1)
+            <*> P.traverse A.parseJSON (_a !? 2)
+            <*> P.traverse A.parseJSON (_a !? 3)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON PermissionDescriptor where
+    toEncoding (PermissionDescriptor _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "name" .= _0
+        , ("sysex" .=) <$> _1
+        , ("userVisibleOnly" .=) <$> _2
+        , ("type" .=) <$> _3
+        ]
+    toJSON (PermissionDescriptor _0 _1 _2 _3) = A.object $ P.catMaybes
+        [ P.pure $ "name" .= _0
+        , ("sysex" .=) <$> _1
+        , ("userVisibleOnly" .=) <$> _2
+        , ("type" .=) <$> _3
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup PermissionDescriptor where
+    PermissionDescriptor _0 _1 _2 _3 <> PermissionDescriptor _ __1 __2 __3 = PermissionDescriptor _0 (_1 <|> __1) (_2 <|> __2) (_3 <|> __3)
 
 
 ------------------------------------------------------------------------------

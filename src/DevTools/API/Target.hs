@@ -661,6 +661,11 @@ data CreateTarget = CreateTarget
       -- | Whether BeginFrames for this target will be controlled via DevTools (headless chrome only,
       -- not supported on MacOS yet, false by default).
     , enableBeginFrameControl :: !(P.Maybe P.Bool)
+      -- | Whether to create a new Window or Tab (chrome-only, false by default).
+    , newWindow :: !(P.Maybe P.Bool)
+      -- | Whether to create the target in background or foreground (chrome-only,
+      -- false by default).
+    , background :: !(P.Maybe P.Bool)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -678,35 +683,43 @@ instance A.FromJSON CreateTarget where
             <*> _o .:? "height"
             <*> _o .:? "browserContextId"
             <*> _o .:? "enableBeginFrameControl"
+            <*> _o .:? "newWindow"
+            <*> _o .:? "background"
         ago = A.withArray "createTarget" $ \_a -> CreateTarget
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
             <*> P.traverse A.parseJSON (_a !? 1)
             <*> P.traverse A.parseJSON (_a !? 2)
             <*> P.traverse A.parseJSON (_a !? 3)
             <*> P.traverse A.parseJSON (_a !? 4)
+            <*> P.traverse A.parseJSON (_a !? 5)
+            <*> P.traverse A.parseJSON (_a !? 6)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON CreateTarget where
-    toEncoding (CreateTarget _0 _1 _2 _3 _4) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (CreateTarget _0 _1 _2 _3 _4 _5 _6) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "url" .= _0
         , ("width" .=) <$> _1
         , ("height" .=) <$> _2
         , ("browserContextId" .=) <$> _3
         , ("enableBeginFrameControl" .=) <$> _4
+        , ("newWindow" .=) <$> _5
+        , ("background" .=) <$> _6
         ]
-    toJSON (CreateTarget _0 _1 _2 _3 _4) = A.object $ P.catMaybes
+    toJSON (CreateTarget _0 _1 _2 _3 _4 _5 _6) = A.object $ P.catMaybes
         [ P.pure $ "url" .= _0
         , ("width" .=) <$> _1
         , ("height" .=) <$> _2
         , ("browserContextId" .=) <$> _3
         , ("enableBeginFrameControl" .=) <$> _4
+        , ("newWindow" .=) <$> _5
+        , ("background" .=) <$> _6
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup CreateTarget where
-    CreateTarget _0 _1 _2 _3 _4 <> CreateTarget _ __1 __2 __3 __4 = CreateTarget _0 (_1 <|> __1) (_2 <|> __2) (_3 <|> __3) (_4 <|> __4)
+    CreateTarget _0 _1 _2 _3 _4 _5 _6 <> CreateTarget _ __1 __2 __3 __4 __5 __6 = CreateTarget _0 (_1 <|> __1) (_2 <|> __2) (_3 <|> __3) (_4 <|> __4) (_5 <|> __5) (_6 <|> __6)
 
 
 ------------------------------------------------------------------------------
@@ -759,7 +772,7 @@ createTarget
     -- ^ The initial URL the page will be navigated to.
 
     -> CreateTarget
-createTarget _0 = CreateTarget _0 P.empty P.empty P.empty P.empty
+createTarget _0 = CreateTarget _0 P.empty P.empty P.empty P.empty P.empty P.empty
 
 
 ------------------------------------------------------------------------------

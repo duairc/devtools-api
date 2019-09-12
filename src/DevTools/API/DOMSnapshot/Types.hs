@@ -618,8 +618,9 @@ data DocumentSnapshot = DocumentSnapshot
     , layout :: !LayoutTreeSnapshot
       -- | The post-layout inline text nodes.
     , textBoxes :: !TextBoxSnapshot
-      -- | Scroll offsets.
+      -- | Horizontal scroll offset.
     , scrollOffsetX :: !(P.Maybe P.Double)
+      -- | Vertical scroll offset.
     , scrollOffsetY :: !(P.Maybe P.Double)
     }
   deriving
@@ -826,11 +827,11 @@ instance P.Monoid NodeTreeSnapshot where
 
 
 ------------------------------------------------------------------------------
--- | Details of an element in the DOM tree with a LayoutObject.
+-- | Table of details of an element in the DOM tree with a LayoutObject.
 data LayoutTreeSnapshot = LayoutTreeSnapshot
-    { -- | The index of the related DOM node in the @domNodes@ array returned by @getSnapshot@.
+    { -- | Index of the corresponding node in the @NodeTreeSnapshot@ array returned by @captureSnapshot@.
       nodeIndex :: ![P.Int]
-      -- | Index into the @computedStyles@ array returned by @captureSnapshot@.
+      -- | Array of indexes specifying computed style strings, filtered according to the @computedStyles@ parameter passed to @captureSnapshot@.
     , styles :: ![ArrayOfStrings]
       -- | The absolute position bounding box.
     , bounds :: ![Rectangle]
@@ -838,6 +839,16 @@ data LayoutTreeSnapshot = LayoutTreeSnapshot
     , text :: ![StringIndex]
       -- | Stacking context information.
     , stackingContexts :: !RareBooleanData
+      -- | Global paint order index, which is determined by the stacking order of the nodes. Nodes
+      -- that are painted together will have the same index. Only provided if includePaintOrder in
+      -- captureSnapshot was true.
+    , paintOrders :: !(P.Maybe [P.Int])
+      -- | The offset rect of nodes. Only available when includeDOMRects is set to true
+    , offsetRects :: !(P.Maybe [Rectangle])
+      -- | The scroll rect of nodes. Only available when includeDOMRects is set to true
+    , scrollRects :: !(P.Maybe [Rectangle])
+      -- | The client rect of nodes. Only available when includeDOMRects is set to true
+    , clientRects :: !(P.Maybe [Rectangle])
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -855,42 +866,58 @@ instance A.FromJSON LayoutTreeSnapshot where
             <*> _o .: "bounds"
             <*> _o .: "text"
             <*> _o .: "stackingContexts"
+            <*> _o .:? "paintOrders"
+            <*> _o .:? "offsetRects"
+            <*> _o .:? "scrollRects"
+            <*> _o .:? "clientRects"
         ago = A.withArray "LayoutTreeSnapshot" $ \_a -> LayoutTreeSnapshot
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
             <*> P.maybe P.empty A.parseJSON (_a !? 1)
             <*> P.maybe P.empty A.parseJSON (_a !? 2)
             <*> P.maybe P.empty A.parseJSON (_a !? 3)
             <*> P.maybe P.empty A.parseJSON (_a !? 4)
+            <*> P.traverse A.parseJSON (_a !? 5)
+            <*> P.traverse A.parseJSON (_a !? 6)
+            <*> P.traverse A.parseJSON (_a !? 7)
+            <*> P.traverse A.parseJSON (_a !? 8)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON LayoutTreeSnapshot where
-    toEncoding (LayoutTreeSnapshot _0 _1 _2 _3 _4) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (LayoutTreeSnapshot _0 _1 _2 _3 _4 _5 _6 _7 _8) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "nodeIndex" .= _0
         , P.pure $ "styles" .= _1
         , P.pure $ "bounds" .= _2
         , P.pure $ "text" .= _3
         , P.pure $ "stackingContexts" .= _4
+        , ("paintOrders" .=) <$> _5
+        , ("offsetRects" .=) <$> _6
+        , ("scrollRects" .=) <$> _7
+        , ("clientRects" .=) <$> _8
         ]
-    toJSON (LayoutTreeSnapshot _0 _1 _2 _3 _4) = A.object $ P.catMaybes
+    toJSON (LayoutTreeSnapshot _0 _1 _2 _3 _4 _5 _6 _7 _8) = A.object $ P.catMaybes
         [ P.pure $ "nodeIndex" .= _0
         , P.pure $ "styles" .= _1
         , P.pure $ "bounds" .= _2
         , P.pure $ "text" .= _3
         , P.pure $ "stackingContexts" .= _4
+        , ("paintOrders" .=) <$> _5
+        , ("offsetRects" .=) <$> _6
+        , ("scrollRects" .=) <$> _7
+        , ("clientRects" .=) <$> _8
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup LayoutTreeSnapshot where
-    LayoutTreeSnapshot _0 _1 _2 _3 _4 <> LayoutTreeSnapshot _ _ _ _ _ = LayoutTreeSnapshot _0 _1 _2 _3 _4
+    LayoutTreeSnapshot _0 _1 _2 _3 _4 _5 _6 _7 _8 <> LayoutTreeSnapshot _ _ _ _ _ __5 __6 __7 __8 = LayoutTreeSnapshot _0 _1 _2 _3 _4 (_5 <|> __5) (_6 <|> __6) (_7 <|> __7) (_8 <|> __8)
 
 
 ------------------------------------------------------------------------------
--- | Details of post layout rendered text positions. The exact layout should not be regarded as
+-- | Table of details of the post layout rendered text positions. The exact layout should not be regarded as
 -- stable and may change between versions.
 data TextBoxSnapshot = TextBoxSnapshot
-    { -- | Intex of th elayout tree node that owns this box collection.
+    { -- | Index of the layout tree node that owns this box collection.
       layoutIndex :: ![P.Int]
       -- | The absolute position bounding box.
     , bounds :: ![Rectangle]

@@ -263,6 +263,8 @@ instance A.ToJSON ConnectionType where
 data CookieSameSite
     = Strict
     | Lax
+    | Extended
+    | None_
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
     , D.NFData, H.Hashable
@@ -274,6 +276,8 @@ instance A.FromJSON CookieSameSite where
     parseJSON = A.withText "CookieSameSite" $ \t -> case t of
         "Strict" -> P.pure Strict
         "Lax" -> P.pure Lax
+        "Extended" -> P.pure Extended
+        "None" -> P.pure None_
         _ -> P.empty
 
 
@@ -281,6 +285,8 @@ instance A.FromJSON CookieSameSite where
 instance A.ToJSON CookieSameSite where
     toJSON Strict = "Strict"
     toJSON Lax = "Lax"
+    toJSON Extended = "Extended"
+    toJSON None_ = "None"
 
 
 ------------------------------------------------------------------------------
@@ -869,6 +875,8 @@ data Response = Response
     , fromDiskCache :: !(P.Maybe P.Bool)
       -- | Specifies that the request was served from the ServiceWorker.
     , fromServiceWorker :: !(P.Maybe P.Bool)
+      -- | Specifies that the request was served from the prefetch cache.
+    , fromPrefetchCache :: !(P.Maybe P.Bool)
       -- | Total number of bytes received for this request so far.
     , encodedDataLength :: !P.Double
       -- | Timing information for the given request.
@@ -905,6 +913,7 @@ instance A.FromJSON Response where
             <*> _o .:? "remotePort"
             <*> _o .:? "fromDiskCache"
             <*> _o .:? "fromServiceWorker"
+            <*> _o .:? "fromPrefetchCache"
             <*> _o .: "encodedDataLength"
             <*> _o .:? "timing"
             <*> _o .:? "protocol"
@@ -925,16 +934,17 @@ instance A.FromJSON Response where
             <*> P.traverse A.parseJSON (_a !? 11)
             <*> P.traverse A.parseJSON (_a !? 12)
             <*> P.traverse A.parseJSON (_a !? 13)
-            <*> P.maybe P.empty A.parseJSON (_a !? 14)
-            <*> P.traverse A.parseJSON (_a !? 15)
+            <*> P.traverse A.parseJSON (_a !? 14)
+            <*> P.maybe P.empty A.parseJSON (_a !? 15)
             <*> P.traverse A.parseJSON (_a !? 16)
-            <*> P.maybe P.empty A.parseJSON (_a !? 17)
-            <*> P.traverse A.parseJSON (_a !? 18)
+            <*> P.traverse A.parseJSON (_a !? 17)
+            <*> P.maybe P.empty A.parseJSON (_a !? 18)
+            <*> P.traverse A.parseJSON (_a !? 19)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON Response where
-    toEncoding (Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 _19) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "url" .= _0
         , P.pure $ "status" .= _1
         , P.pure $ "statusText" .= _2
@@ -949,13 +959,14 @@ instance A.ToJSON Response where
         , ("remotePort" .=) <$> _11
         , ("fromDiskCache" .=) <$> _12
         , ("fromServiceWorker" .=) <$> _13
-        , P.pure $ "encodedDataLength" .= _14
-        , ("timing" .=) <$> _15
-        , ("protocol" .=) <$> _16
-        , P.pure $ "securityState" .= _17
-        , ("securityDetails" .=) <$> _18
+        , ("fromPrefetchCache" .=) <$> _14
+        , P.pure $ "encodedDataLength" .= _15
+        , ("timing" .=) <$> _16
+        , ("protocol" .=) <$> _17
+        , P.pure $ "securityState" .= _18
+        , ("securityDetails" .=) <$> _19
         ]
-    toJSON (Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18) = A.object $ P.catMaybes
+    toJSON (Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 _19) = A.object $ P.catMaybes
         [ P.pure $ "url" .= _0
         , P.pure $ "status" .= _1
         , P.pure $ "statusText" .= _2
@@ -970,17 +981,18 @@ instance A.ToJSON Response where
         , ("remotePort" .=) <$> _11
         , ("fromDiskCache" .=) <$> _12
         , ("fromServiceWorker" .=) <$> _13
-        , P.pure $ "encodedDataLength" .= _14
-        , ("timing" .=) <$> _15
-        , ("protocol" .=) <$> _16
-        , P.pure $ "securityState" .= _17
-        , ("securityDetails" .=) <$> _18
+        , ("fromPrefetchCache" .=) <$> _14
+        , P.pure $ "encodedDataLength" .= _15
+        , ("timing" .=) <$> _16
+        , ("protocol" .=) <$> _17
+        , P.pure $ "securityState" .= _18
+        , ("securityDetails" .=) <$> _19
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup Response where
-    Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 <> Response _ _ _ _ __4 _ __6 __7 _ _ __10 __11 __12 __13 _ __15 __16 _ __18 = Response _0 _1 _2 _3 (_4 <|> __4) _5 (_6 <|> __6) (_7 <|> __7) _8 _9 (_10 <|> __10) (_11 <|> __11) (_12 <|> __12) (_13 <|> __13) _14 (_15 <|> __15) (_16 <|> __16) _17 (_18 <|> __18)
+    Response _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 _19 <> Response _ _ _ _ __4 _ __6 __7 _ _ __10 __11 __12 __13 __14 _ __16 __17 _ __19 = Response _0 _1 _2 _3 (_4 <|> __4) _5 (_6 <|> __6) (_7 <|> __7) _8 _9 (_10 <|> __10) (_11 <|> __11) (_12 <|> __12) (_13 <|> __13) (_14 <|> __14) _15 (_16 <|> __16) (_17 <|> __17) _18 (_19 <|> __19)
 
 
 ------------------------------------------------------------------------------
@@ -1371,6 +1383,212 @@ instance A.ToJSON Cookie where
 ------------------------------------------------------------------------------
 instance P.Semigroup Cookie where
     Cookie _0 _1 _2 _3 _4 _5 _6 _7 _8 _9 <> Cookie _ _ _ _ _ _ _ _ _ __9 = Cookie _0 _1 _2 _3 _4 _5 _6 _7 _8 (_9 <|> __9)
+
+
+------------------------------------------------------------------------------
+-- | Types of reasons why a cookie may not be stored from a response.
+{-# WARNING SetCookieBlockedReason "This feature is marked as EXPERIMENTAL." #-}
+data SetCookieBlockedReason
+    = SecureOnly
+    | SameSiteStrict
+    | SameSiteLax
+    | SameSiteExtended
+    | SameSiteUnspecifiedTreatedAsLax
+    | SameSiteNoneInsecure
+    | UserPreferences
+    | SyntaxError
+    | SchemeNotSupported
+    | OverwriteSecure
+    | InvalidDomain
+    | InvalidPrefix
+    | UnknownError
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetCookieBlockedReason where
+    parseJSON = A.withText "SetCookieBlockedReason" $ \t -> case t of
+        "SecureOnly" -> P.pure SecureOnly
+        "SameSiteStrict" -> P.pure SameSiteStrict
+        "SameSiteLax" -> P.pure SameSiteLax
+        "SameSiteExtended" -> P.pure SameSiteExtended
+        "SameSiteUnspecifiedTreatedAsLax" -> P.pure SameSiteUnspecifiedTreatedAsLax
+        "SameSiteNoneInsecure" -> P.pure SameSiteNoneInsecure
+        "UserPreferences" -> P.pure UserPreferences
+        "SyntaxError" -> P.pure SyntaxError
+        "SchemeNotSupported" -> P.pure SchemeNotSupported
+        "OverwriteSecure" -> P.pure OverwriteSecure
+        "InvalidDomain" -> P.pure InvalidDomain
+        "InvalidPrefix" -> P.pure InvalidPrefix
+        "UnknownError" -> P.pure UnknownError
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetCookieBlockedReason where
+    toJSON SecureOnly = "SecureOnly"
+    toJSON SameSiteStrict = "SameSiteStrict"
+    toJSON SameSiteLax = "SameSiteLax"
+    toJSON SameSiteExtended = "SameSiteExtended"
+    toJSON SameSiteUnspecifiedTreatedAsLax = "SameSiteUnspecifiedTreatedAsLax"
+    toJSON SameSiteNoneInsecure = "SameSiteNoneInsecure"
+    toJSON UserPreferences = "UserPreferences"
+    toJSON SyntaxError = "SyntaxError"
+    toJSON SchemeNotSupported = "SchemeNotSupported"
+    toJSON OverwriteSecure = "OverwriteSecure"
+    toJSON InvalidDomain = "InvalidDomain"
+    toJSON InvalidPrefix = "InvalidPrefix"
+    toJSON UnknownError = "UnknownError"
+
+
+------------------------------------------------------------------------------
+-- | Types of reasons why a cookie may not be sent with a request.
+{-# WARNING CookieBlockedReason "This feature is marked as EXPERIMENTAL." #-}
+data CookieBlockedReason
+    = SecureOnly_
+    | NotOnPath
+    | DomainMismatch
+    | SameSiteStrict_
+    | SameSiteLax_
+    | SameSiteExtended_
+    | SameSiteUnspecifiedTreatedAsLax_
+    | SameSiteNoneInsecure_
+    | UserPreferences_
+    | UnknownError_
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Enum, P.Bounded, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON CookieBlockedReason where
+    parseJSON = A.withText "CookieBlockedReason" $ \t -> case t of
+        "SecureOnly" -> P.pure SecureOnly_
+        "NotOnPath" -> P.pure NotOnPath
+        "DomainMismatch" -> P.pure DomainMismatch
+        "SameSiteStrict" -> P.pure SameSiteStrict_
+        "SameSiteLax" -> P.pure SameSiteLax_
+        "SameSiteExtended" -> P.pure SameSiteExtended_
+        "SameSiteUnspecifiedTreatedAsLax" -> P.pure SameSiteUnspecifiedTreatedAsLax_
+        "SameSiteNoneInsecure" -> P.pure SameSiteNoneInsecure_
+        "UserPreferences" -> P.pure UserPreferences_
+        "UnknownError" -> P.pure UnknownError_
+        _ -> P.empty
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON CookieBlockedReason where
+    toJSON SecureOnly_ = "SecureOnly"
+    toJSON NotOnPath = "NotOnPath"
+    toJSON DomainMismatch = "DomainMismatch"
+    toJSON SameSiteStrict_ = "SameSiteStrict"
+    toJSON SameSiteLax_ = "SameSiteLax"
+    toJSON SameSiteExtended_ = "SameSiteExtended"
+    toJSON SameSiteUnspecifiedTreatedAsLax_ = "SameSiteUnspecifiedTreatedAsLax"
+    toJSON SameSiteNoneInsecure_ = "SameSiteNoneInsecure"
+    toJSON UserPreferences_ = "UserPreferences"
+    toJSON UnknownError_ = "UnknownError"
+
+
+------------------------------------------------------------------------------
+-- | A cookie which was not stored from a response with the corresponding reason.
+{-# WARNING BlockedSetCookieWithReason "This feature is marked as EXPERIMENTAL." #-}
+data BlockedSetCookieWithReason = BlockedSetCookieWithReason
+    { -- | The reason this cookie was blocked.
+      blockedReason :: !SetCookieBlockedReason
+      -- | The string representing this individual cookie as it would appear in the header.
+      -- This is not the entire "cookie" or "set-cookie" header which could have multiple cookies.
+    , cookieLine :: !T.Text
+      -- | The cookie object which represents the cookie which was not stored. It is optional because
+      -- sometimes complete cookie information is not available, such as in the case of parsing
+      -- errors.
+    , cookie :: !(P.Maybe Cookie)
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON BlockedSetCookieWithReason where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "BlockedSetCookieWithReason" $ \_o -> BlockedSetCookieWithReason
+            <$> _o .: "blockedReason"
+            <*> _o .: "cookieLine"
+            <*> _o .:? "cookie"
+        ago = A.withArray "BlockedSetCookieWithReason" $ \_a -> BlockedSetCookieWithReason
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.traverse A.parseJSON (_a !? 2)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON BlockedSetCookieWithReason where
+    toEncoding (BlockedSetCookieWithReason _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "blockedReason" .= _0
+        , P.pure $ "cookieLine" .= _1
+        , ("cookie" .=) <$> _2
+        ]
+    toJSON (BlockedSetCookieWithReason _0 _1 _2) = A.object $ P.catMaybes
+        [ P.pure $ "blockedReason" .= _0
+        , P.pure $ "cookieLine" .= _1
+        , ("cookie" .=) <$> _2
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup BlockedSetCookieWithReason where
+    BlockedSetCookieWithReason _0 _1 _2 <> BlockedSetCookieWithReason _ _ __2 = BlockedSetCookieWithReason _0 _1 (_2 <|> __2)
+
+
+------------------------------------------------------------------------------
+-- | A cookie with was not sent with a request with the corresponding reason.
+{-# WARNING BlockedCookieWithReason "This feature is marked as EXPERIMENTAL." #-}
+data BlockedCookieWithReason = BlockedCookieWithReason
+    { -- | The reason the cookie was blocked.
+      blockedReason :: !CookieBlockedReason
+      -- | The cookie object representing the cookie which was not sent.
+    , cookie :: !Cookie
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON BlockedCookieWithReason where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "BlockedCookieWithReason" $ \_o -> BlockedCookieWithReason
+            <$> _o .: "blockedReason"
+            <*> _o .: "cookie"
+        ago = A.withArray "BlockedCookieWithReason" $ \_a -> BlockedCookieWithReason
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON BlockedCookieWithReason where
+    toEncoding (BlockedCookieWithReason _0 _1) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "blockedReason" .= _0
+        , P.pure $ "cookie" .= _1
+        ]
+    toJSON (BlockedCookieWithReason _0 _1) = A.object $ P.catMaybes
+        [ P.pure $ "blockedReason" .= _0
+        , P.pure $ "cookie" .= _1
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup BlockedCookieWithReason where
+    BlockedCookieWithReason _0 _1 <> BlockedCookieWithReason _ _ = BlockedCookieWithReason _0 _1
 
 
 ------------------------------------------------------------------------------
@@ -1803,6 +2021,8 @@ data SignedExchangeHeader = SignedExchangeHeader
     , responseHeaders :: !Headers
       -- | Signed exchange response signature.
     , signatures :: ![SignedExchangeSignature]
+      -- | Signed exchange header integrity hash in the form of "sha256-<base64-hash-value>".
+    , headerIntegrity :: !T.Text
     }
   deriving
     ( P.Eq, P.Read, P.Show, P.Generic, P.Typeable
@@ -1819,32 +2039,36 @@ instance A.FromJSON SignedExchangeHeader where
             <*> _o .: "responseCode"
             <*> _o .: "responseHeaders"
             <*> _o .: "signatures"
+            <*> _o .: "headerIntegrity"
         ago = A.withArray "SignedExchangeHeader" $ \_a -> SignedExchangeHeader
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
             <*> P.maybe P.empty A.parseJSON (_a !? 1)
             <*> P.maybe P.empty A.parseJSON (_a !? 2)
             <*> P.maybe P.empty A.parseJSON (_a !? 3)
+            <*> P.maybe P.empty A.parseJSON (_a !? 4)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON SignedExchangeHeader where
-    toEncoding (SignedExchangeHeader _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (SignedExchangeHeader _0 _1 _2 _3 _4) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "requestUrl" .= _0
         , P.pure $ "responseCode" .= _1
         , P.pure $ "responseHeaders" .= _2
         , P.pure $ "signatures" .= _3
+        , P.pure $ "headerIntegrity" .= _4
         ]
-    toJSON (SignedExchangeHeader _0 _1 _2 _3) = A.object $ P.catMaybes
+    toJSON (SignedExchangeHeader _0 _1 _2 _3 _4) = A.object $ P.catMaybes
         [ P.pure $ "requestUrl" .= _0
         , P.pure $ "responseCode" .= _1
         , P.pure $ "responseHeaders" .= _2
         , P.pure $ "signatures" .= _3
+        , P.pure $ "headerIntegrity" .= _4
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup SignedExchangeHeader where
-    SignedExchangeHeader _0 _1 _2 _3 <> SignedExchangeHeader _ _ _ _ = SignedExchangeHeader _0 _1 _2 _3
+    SignedExchangeHeader _0 _1 _2 _3 _4 <> SignedExchangeHeader _ _ _ _ _ = SignedExchangeHeader _0 _1 _2 _3 _4
 
 
 ------------------------------------------------------------------------------

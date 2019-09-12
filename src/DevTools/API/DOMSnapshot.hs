@@ -309,6 +309,10 @@ getSnapshot _0 = GetSnapshot _0 P.empty P.empty P.empty
 data CaptureSnapshot = CaptureSnapshot
     { -- | Whitelist of computed styles to return.
       computedStyles :: ![T.Text]
+      -- | Whether to include layout object paint orders into the snapshot.
+    , includePaintOrder :: !(P.Maybe P.Bool)
+      -- | Whether to include DOM rectangles (offsetRects, clientRects, scrollRects) into the snapshot
+    , includeDOMRects :: !(P.Maybe P.Bool)
     }
   deriving
     ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
@@ -322,23 +326,31 @@ instance A.FromJSON CaptureSnapshot where
       where
         ogo = A.withObject "captureSnapshot" $ \_o -> CaptureSnapshot
             <$> _o .: "computedStyles"
+            <*> _o .:? "includePaintOrder"
+            <*> _o .:? "includeDOMRects"
         ago = A.withArray "captureSnapshot" $ \_a -> CaptureSnapshot
             <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.traverse A.parseJSON (_a !? 1)
+            <*> P.traverse A.parseJSON (_a !? 2)
 
 
 ------------------------------------------------------------------------------
 instance A.ToJSON CaptureSnapshot where
-    toEncoding (CaptureSnapshot _0) = A.pairs $ P.fold $ P.catMaybes
+    toEncoding (CaptureSnapshot _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
         [ P.pure $ "computedStyles" .= _0
+        , ("includePaintOrder" .=) <$> _1
+        , ("includeDOMRects" .=) <$> _2
         ]
-    toJSON (CaptureSnapshot _0) = A.object $ P.catMaybes
+    toJSON (CaptureSnapshot _0 _1 _2) = A.object $ P.catMaybes
         [ P.pure $ "computedStyles" .= _0
+        , ("includePaintOrder" .=) <$> _1
+        , ("includeDOMRects" .=) <$> _2
         ]
 
 
 ------------------------------------------------------------------------------
 instance P.Semigroup CaptureSnapshot where
-    CaptureSnapshot _0 <> CaptureSnapshot _ = CaptureSnapshot _0
+    CaptureSnapshot _0 _1 _2 <> CaptureSnapshot _ __1 __2 = CaptureSnapshot _0 (_1 <|> __1) (_2 <|> __2)
 
 
 ------------------------------------------------------------------------------
@@ -403,5 +415,5 @@ captureSnapshot
     -- ^ Whitelist of computed styles to return.
 
     -> CaptureSnapshot
-captureSnapshot _0 = CaptureSnapshot _0
+captureSnapshot _0 = CaptureSnapshot _0 P.empty P.empty
 

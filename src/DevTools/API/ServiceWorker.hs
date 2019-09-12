@@ -240,6 +240,66 @@ dispatchSyncEvent _0 _1 _2 _3 = DispatchSyncEvent _0 _1 _2 _3
 
 
 ------------------------------------------------------------------------------
+data DispatchPeriodicSyncEvent = DispatchPeriodicSyncEvent
+    { origin :: !T.Text
+    , registrationId :: !RegistrationID
+    , tag :: !T.Text
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON DispatchPeriodicSyncEvent where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "dispatchPeriodicSyncEvent" $ \_o -> DispatchPeriodicSyncEvent
+            <$> _o .: "origin"
+            <*> _o .: "registrationId"
+            <*> _o .: "tag"
+        ago = A.withArray "dispatchPeriodicSyncEvent" $ \_a -> DispatchPeriodicSyncEvent
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.maybe P.empty A.parseJSON (_a !? 2)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON DispatchPeriodicSyncEvent where
+    toEncoding (DispatchPeriodicSyncEvent _0 _1 _2) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "origin" .= _0
+        , P.pure $ "registrationId" .= _1
+        , P.pure $ "tag" .= _2
+        ]
+    toJSON (DispatchPeriodicSyncEvent _0 _1 _2) = A.object $ P.catMaybes
+        [ P.pure $ "origin" .= _0
+        , P.pure $ "registrationId" .= _1
+        , P.pure $ "tag" .= _2
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup DispatchPeriodicSyncEvent where
+    DispatchPeriodicSyncEvent _0 _1 _2 <> DispatchPeriodicSyncEvent _ _ _ = DispatchPeriodicSyncEvent _0 _1 _2
+
+
+------------------------------------------------------------------------------
+instance M.Method DispatchPeriodicSyncEvent where
+    type Result DispatchPeriodicSyncEvent = ()
+    name _ = "ServiceWorker.dispatchPeriodicSyncEvent"
+
+
+------------------------------------------------------------------------------
+dispatchPeriodicSyncEvent
+    :: T.Text
+    -> RegistrationID
+    -> T.Text
+    -> DispatchPeriodicSyncEvent
+dispatchPeriodicSyncEvent _0 _1 _2 = DispatchPeriodicSyncEvent _0 _1 _2
+
+
+------------------------------------------------------------------------------
 data Enable = Enable
     {
     }

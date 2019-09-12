@@ -64,6 +64,85 @@ import           Data.Vector ((!?))
 
 
 ------------------------------------------------------------------------------
+-- | Set permission settings for given origin.
+{-# WARNING SetPermission "This feature is marked as EXPERIMENTAL." #-}
+data SetPermission = SetPermission
+    { -- | Origin the permission applies to.
+      origin :: !T.Text
+      -- | Descriptor of permission to override.
+    , permission :: !PermissionDescriptor
+      -- | Setting of the permission.
+    , setting :: !PermissionSetting
+      -- | Context to override. When omitted, default browser context is used.
+    , browserContextId :: !(P.Maybe Target.TargetID)
+    }
+  deriving
+    ( P.Eq, P.Ord, P.Read, P.Show, P.Generic, P.Typeable
+    , D.NFData, H.Hashable
+    )
+
+
+------------------------------------------------------------------------------
+instance A.FromJSON SetPermission where
+    parseJSON v = ago v <|> ogo v
+      where
+        ogo = A.withObject "setPermission" $ \_o -> SetPermission
+            <$> _o .: "origin"
+            <*> _o .: "permission"
+            <*> _o .: "setting"
+            <*> _o .:? "browserContextId"
+        ago = A.withArray "setPermission" $ \_a -> SetPermission
+            <$> P.maybe P.empty A.parseJSON (_a !? 0)
+            <*> P.maybe P.empty A.parseJSON (_a !? 1)
+            <*> P.maybe P.empty A.parseJSON (_a !? 2)
+            <*> P.traverse A.parseJSON (_a !? 3)
+
+
+------------------------------------------------------------------------------
+instance A.ToJSON SetPermission where
+    toEncoding (SetPermission _0 _1 _2 _3) = A.pairs $ P.fold $ P.catMaybes
+        [ P.pure $ "origin" .= _0
+        , P.pure $ "permission" .= _1
+        , P.pure $ "setting" .= _2
+        , ("browserContextId" .=) <$> _3
+        ]
+    toJSON (SetPermission _0 _1 _2 _3) = A.object $ P.catMaybes
+        [ P.pure $ "origin" .= _0
+        , P.pure $ "permission" .= _1
+        , P.pure $ "setting" .= _2
+        , ("browserContextId" .=) <$> _3
+        ]
+
+
+------------------------------------------------------------------------------
+instance P.Semigroup SetPermission where
+    SetPermission _0 _1 _2 _3 <> SetPermission _ _ _ __3 = SetPermission _0 _1 _2 (_3 <|> __3)
+
+
+------------------------------------------------------------------------------
+instance M.Method SetPermission where
+    type Result SetPermission = ()
+    name _ = "Browser.setPermission"
+
+
+------------------------------------------------------------------------------
+-- | Set permission settings for given origin.
+{-# WARNING setPermission "This feature is marked as EXPERIMENTAL." #-}
+setPermission
+    :: T.Text
+    -- ^ Origin the permission applies to.
+
+    -> PermissionDescriptor
+    -- ^ Descriptor of permission to override.
+
+    -> PermissionSetting
+    -- ^ Setting of the permission.
+
+    -> SetPermission
+setPermission _0 _1 _2 = SetPermission _0 _1 _2 P.empty
+
+
+------------------------------------------------------------------------------
 -- | Grant specific permissions to the given origin and reject all others.
 {-# WARNING GrantPermissions "This feature is marked as EXPERIMENTAL." #-}
 data GrantPermissions = GrantPermissions
